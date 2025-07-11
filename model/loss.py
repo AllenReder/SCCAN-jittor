@@ -1,6 +1,5 @@
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
+import jittor as jt
+from jittor import nn
 
 
 # ========================================
@@ -24,19 +23,19 @@ def weighted_dice_loss(prediction, target_seg, weighted_val: float = 1.0, reduct
     """
     target_seg_fg = target_seg == 1
     target_seg_bg = target_seg == 0
-    target_seg = torch.stack([target_seg_bg, target_seg_fg], dim=1).float()
+    target_seg = jt.stack([target_seg_bg, target_seg_fg], dim=1).float()
 
     n, _, h, w = target_seg.shape
 
     prediction = prediction.reshape(-1, h, w)
     target_seg = target_seg.reshape(-1, h, w)
-    prediction = torch.sigmoid(prediction)
+    prediction = jt.sigmoid(prediction)
     prediction = prediction.reshape(-1, h * w)
     target_seg = target_seg.reshape(-1, h * w)
 
     # calculate dice loss
     loss_part = (prediction ** 2).sum(dim=-1) + (target_seg ** 2).sum(dim=-1)
-    loss = 1 - 2 * (target_seg * prediction).sum(dim=-1) / torch.clamp(loss_part, min=eps)
+    loss = 1 - 2 * (target_seg * prediction).sum(dim=-1) / jt.clamp(loss_part, min_v=eps)
     # normalize the loss
     loss = loss * weighted_val
 
@@ -53,7 +52,7 @@ class WeightedDiceLoss(nn.Module):
         self.weighted_val = weighted_val
         self.reduction = reduction
 
-    def forward(self, prediction, target_seg):
+    def execute(self, prediction, target_seg):
         return weighted_dice_loss(prediction, target_seg, self.weighted_val, self.reduction)
 
 
@@ -69,7 +68,7 @@ class CEDiceLoss(nn.Module):
         self.ce = nn.CrossEntropyLoss(ignore_index=self.ignore_index, reduction=self.reduction)
         self.dice = WeightedDiceLoss(reduction=reduction)
 
-    def forward(self, output, target):
+    def execute(self, output, target):
         ce = self.ce(output, target)
         dice = self.dice(output, target)
         return ce + dice
