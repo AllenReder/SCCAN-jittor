@@ -5,13 +5,11 @@ import numbers
 import collections
 import cv2
 
-import torch
+import jittor as jt
 
 manual_seed = 123
-torch.manual_seed(manual_seed)
+jt.set_seed(manual_seed)
 np.random.seed(manual_seed)
-torch.manual_seed(manual_seed)
-torch.cuda.manual_seed_all(manual_seed)
 random.seed(manual_seed)
 
 
@@ -30,40 +28,43 @@ import time
 
 
 class ToTensor(object):
-    # Converts numpy.ndarray (H x W x C) to a torch.FloatTensor of shape (C x H x W).
+    # Converts numpy.ndarray (H x W x C) to a jittor.Var of shape (C x H x W).
     def __call__(self, image, label, label2):
         if not isinstance(image, np.ndarray) or not isinstance(label, np.ndarray):
-            raise (RuntimeError("segtransform.ToTensor() only handle np.ndarray"
-                                "[eg: data readed by cv2.imread()].\n"))
+            raise RuntimeError("segtransform.ToTensor() only handle np.ndarray"
+                              "[eg: data readed by cv2.imread()].\n")
         if len(image.shape) > 3 or len(image.shape) < 2:
-            raise (RuntimeError("segtransform.ToTensor() only handle np.ndarray with 3 dims or 2 dims.\n"))
+            raise RuntimeError("segtransform.ToTensor() only handle np.ndarray with 3 dims or 2 dims.\n")
         if len(image.shape) == 2:
             image = np.expand_dims(image, axis=2)
         if not len(label.shape) == 2:
-            raise (RuntimeError("segtransform.ToTensor() only handle np.ndarray labellabel with 2 dims.\n"))
+            raise RuntimeError("segtransform.ToTensor() only handle np.ndarray labellabel with 2 dims.\n")
 
-        image = torch.from_numpy(image.transpose((2, 0, 1)))
-        if not isinstance(image, torch.FloatTensor):
-            image = image.float()
-        label = torch.from_numpy(label)
-        label2 = torch.from_numpy(label2)
-        if not isinstance(label, torch.LongTensor):
-            label = label.long()
-            label2 = label2.long()
+        image = jt.array(image.transpose((2, 0, 1)))
+        if not image.dtype == jt.float32:
+            image = image.float32()
+        label = jt.array(label)
+        label2 = jt.array(label2)
+        if not label.dtype == jt.int64:
+            label = label.int64()
+            label2 = label2.int64()
         return image, label, label2
 
 
 class ToNumpy(object):
-    # Converts torch.FloatTensor of shape (C x H x W) to a numpy.ndarray (H x W x C).
+    # Converts jittor.Var of shape (C x H x W) to a numpy.ndarray (H x W x C).
     def __call__(self, image, label, label2):
-        if not isinstance(image, torch.Tensor) or not isinstance(label, torch.Tensor):
-            raise (RuntimeError("segtransform.ToNumpy() only handle torch.tensor"))
+        if not isinstance(image, jt.Var) or not isinstance(label, jt.Var):
+            raise RuntimeError("segtransform.ToNumpy() only handle jittor.Var")
 
-        image = image.cpu().numpy().transpose((1, 2, 0))
+        image = image.numpy().transpose((1, 2, 0))
         if not image.dtype == np.uint8:
             image = image.astype(np.uint8)
-        label = label.cpu().numpy().transpose((1, 2, 0))
-        label2 = label2.cpu().numpy().transpose((1, 2, 0))
+        label = label.numpy()
+        label2 = label2.numpy()
+        if len(label.shape) == 3:
+            label = label.transpose((1, 2, 0))
+            label2 = label2.transpose((1, 2, 0))
         if not label.dtype == np.uint8:
             label = label.astype(np.uint8)
             label2 = label2.astype(np.uint8)
@@ -82,11 +83,11 @@ class Normalize(object):
 
     def __call__(self, image, label, label2):
         if self.std is None:
-            for t, m in zip(image, self.mean):
-                t.sub_(m)
+            for i, m in enumerate(self.mean):
+                image[i] = image[i] - m
         else:
-            for t, m, s in zip(image, self.mean, self.std):
-                t.sub_(m).div_(s)
+            for i, (m, s) in enumerate(zip(self.mean, self.std)):
+                image[i] = (image[i] - m) / s
         return image, label, label2
 
 
@@ -102,11 +103,11 @@ class UnNormalize(object):
 
     def __call__(self, image, label, label2):
         if self.std is None:
-            for t, m in zip(image, self.mean):
-                t.add_(m)
+            for i, m in enumerate(self.mean):
+                image[i] = image[i] + m
         else:
-            for t, m, s in zip(image, self.mean, self.std):
-                t.mul_(s).add_(m)
+            for i, (m, s) in enumerate(zip(self.mean, self.std)):
+                image[i] = image[i] * s + m
         return image, label, label2
 
 
@@ -267,7 +268,7 @@ class RandScale(object):
                 and 0 < scale[0] < scale[1]:
             self.scale = scale
         else:
-            raise (RuntimeError("segtransform.RandScale() scale param error.\n"))
+            raise RuntimeError("segtransform.RandScale() scale param error.\n")
         if aspect_ratio is None:
             self.aspect_ratio = aspect_ratio
         elif isinstance(aspect_ratio, collections.Iterable) and len(aspect_ratio) == 2 \
@@ -275,7 +276,7 @@ class RandScale(object):
                 and 0 < aspect_ratio[0] < aspect_ratio[1]:
             self.aspect_ratio = aspect_ratio
         else:
-            raise (RuntimeError("segtransform.RandScale() aspect_ratio param error.\n"))
+            raise RuntimeError("segtransform.RandScale() aspect_ratio param error.\n")
 
     def __call__(self, image, label, label2):
         temp_scale = self.scale[0] + (self.scale[1] - self.scale[0]) * random.random()
@@ -309,26 +310,26 @@ class Crop(object):
             self.crop_h = size[0]
             self.crop_w = size[1]
         else:
-            raise (RuntimeError("crop size error.\n"))
+            raise RuntimeError("crop size error.\n")
         if crop_type == 'center' or crop_type == 'rand':
             self.crop_type = crop_type
         else:
-            raise (RuntimeError("crop type error: rand | center\n"))
+            raise RuntimeError("crop type error: rand | center\n")
         if padding is None:
             self.padding = padding
         elif isinstance(padding, list):
             if all(isinstance(i, numbers.Number) for i in padding):
                 self.padding = padding
             else:
-                raise (RuntimeError("padding in Crop() should be a number list\n"))
+                raise RuntimeError("padding in Crop() should be a number list\n")
             if len(padding) != 3:
-                raise (RuntimeError("padding channel is not equal with 3\n"))
+                raise RuntimeError("padding channel is not equal with 3\n")
         else:
-            raise (RuntimeError("padding in Crop() should be a number list\n"))
+            raise RuntimeError("padding in Crop() should be a number list\n")
         if isinstance(ignore_label, int):
             self.ignore_label = ignore_label
         else:
-            raise (RuntimeError("ignore_label should be an integer number\n"))
+            raise RuntimeError("ignore_label should be an integer number\n")
 
     def __call__(self, image, label, label2):
         h, w = label.shape
@@ -339,7 +340,7 @@ class Crop(object):
         pad_w_half = int(pad_w / 2)
         if pad_h > 0 or pad_w > 0:
             if self.padding is None:
-                raise (RuntimeError("segtransform.Crop() need padding while padding argument is None\n"))
+                raise RuntimeError("segtransform.Crop() need padding while padding argument is None\n")
             image = cv2.copyMakeBorder(image, pad_h_half, pad_h - pad_h_half, pad_w_half, pad_w - pad_w_half,
                                        cv2.BORDER_CONSTANT, value=self.padding)
             label = cv2.copyMakeBorder(label, pad_h_half, pad_h - pad_h_half, pad_w_half, pad_w - pad_w_half,
@@ -399,13 +400,13 @@ class RandRotate(object):
         if isinstance(rotate[0], numbers.Number) and isinstance(rotate[1], numbers.Number) and rotate[0] < rotate[1]:
             self.rotate = rotate
         else:
-            raise (RuntimeError("segtransform.RandRotate() scale param error.\n"))
+            raise RuntimeError("segtransform.RandRotate() scale param error.\n")
         assert padding is not None
         assert isinstance(padding, list) and len(padding) == 3
         if all(isinstance(i, numbers.Number) for i in padding):
             self.padding = padding
         else:
-            raise (RuntimeError("padding in RandRotate() should be a number list\n"))
+            raise RuntimeError("padding in RandRotate() should be a number list\n")
         assert isinstance(ignore_label, int)
         self.ignore_label = ignore_label
         self.p = p

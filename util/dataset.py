@@ -5,9 +5,8 @@ import cv2
 import numpy as np
 import copy
 
-from torch.utils.data import Dataset
-import torch.nn.functional as F
-import torch
+import jittor as jt
+from jittor.dataset import Dataset
 import random
 import time
 from tqdm import tqdm
@@ -92,6 +91,7 @@ class SemData(Dataset):
                  transform=None, transform_tri=None, mode='train', ann_type='mask',
                  ft_transform=None, ft_aug_size=None):
 
+        super().__init__()
         assert mode in ['train', 'val', 'demo', 'finetune']
         assert data_set in ['pascal', 'coco']
         if mode == 'finetune':
@@ -199,9 +199,11 @@ class SemData(Dataset):
         self.transform_tri = transform_tri
         self.ft_transform = ft_transform
         self.ft_aug_size = ft_aug_size
+        
+        self.total_len = len(self.data_list)
 
     def __len__(self):
-        return len(self.data_list)
+        return self.total_len
 
     def __getitem__(self, index):
         image_path, label_path = self.data_list[index]
@@ -299,10 +301,10 @@ class SemData(Dataset):
         s_ys = support_label_list
         s_x = s_xs[0].unsqueeze(0)
         for i in range(1, self.shot):
-            s_x = torch.cat([s_xs[i].unsqueeze(0), s_x], 0)
+            s_x = jt.concat([s_xs[i].unsqueeze(0), s_x], dim=0)
         s_y = s_ys[0].unsqueeze(0)
         for i in range(1, self.shot):
-            s_y = torch.cat([s_ys[i].unsqueeze(0), s_y], 0)
+            s_y = jt.concat([s_ys[i].unsqueeze(0), s_y], dim=0)
 
         # Return
         if self.mode == 'train':
