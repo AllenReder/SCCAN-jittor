@@ -281,7 +281,7 @@ def train(train_loader, val_loader, model, optimizer, optimizer_swin, epoch):
         current_iter = epoch * len(train_loader) // args.batch_size + i + 1
 
         poly_learning_rate(optimizer, args.base_lr, current_iter, max_iter, power=args.power,
-                           index_split=args.index_split, warmup=args.warmup, warmup_step=len(train_loader) // 2)
+                           index_split=args.index_split, warmup=args.warmup, warmup_step=len(train_loader) // args.batch_size // 2)
 
         output, main_loss, aux_loss1, aux_loss2 = model(s_x=s_input, s_y=s_mask, x=input, y_m=target, cat_idx=subcls)
 
