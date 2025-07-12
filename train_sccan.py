@@ -7,19 +7,14 @@ import numpy as np
 import logging
 import argparse
 import math
-from visdom import Visdom
 import os.path as osp
 
-import torch
-import torch.backends.cudnn as cudnn
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.nn.parallel
-import torch.optim
-import torch.utils.data
-import torch.multiprocessing as mp
-import torch.distributed as dist
-from torch.utils.data.distributed import DistributedSampler
+import jittor as jt
+from jittor import nn
+import jittor.nn as F
+from jittor.dataset import Dataset
+from jittor.dataset.dataset import DataLoader
+from jittor.misc import _pair as to_2tuple
 
 from tensorboardX import SummaryWriter
 
@@ -36,14 +31,14 @@ cv2.setNumThreads(0)
 
 
 def get_parser():
-    parser = argparse.ArgumentParser(description='PyTorch Few-Shot Semantic Segmentation')
+    parser = argparse.ArgumentParser(description='Jittor Few-Shot Semantic Segmentation')
     parser.add_argument('--arch', type=str, default='SCCAN')  #
     parser.add_argument('--viz', action='store_true', default=False)
-    parser.add_argument('--config', type=str, default='config/pascal/pascal_split0_vgg.yaml',
+    parser.add_argument('--config', type=str, default='config/pascal/pascal_split0_resnet50.yaml',
                         help='config file')  # coco/coco_split0_resnet50.yaml
     parser.add_argument('--local_rank', type=int, default=-1,
                         help='number of cpu threads to use during batch generation')
-    parser.add_argument('--opts', help='see config/ade20k/ade20k_pspnet50.yaml for all options', default=None,
+    parser.add_argument('--opts', help='see config/pascal/pascal_split0_resnet50.yaml for all options', default=None,
                         nargs=argparse.REMAINDER)
     args = parser.parse_args()
     assert args.config is not None
@@ -66,17 +61,13 @@ def get_model(args):
     # Initialize process for distributed training
     if args.distributed:
         # Initialize Process Group
-        dist.init_process_group(backend='nccl')
+        jt.distributed.init_process_group(backend='nccl')
         print('args.local_rank: ', args.local_rank)
-        torch.cuda.set_device(args.local_rank)
-        device = torch.device('cuda', args.local_rank)
-        model.to(device)
-        model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
-        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.local_rank],
-                                                          output_device=args.local_rank,
-                                                          find_unused_parameters=True)
+        jt.flags.use_cuda = 1
+        jt.set_device(args.local_rank)
+        model.sync_parameters()
     else:
-        model = model.cuda()
+        jt.flags.use_cuda = 1
 
     # Resume
     get_save_path(args)
@@ -88,7 +79,7 @@ def get_model(args):
         if os.path.isfile(resume_path):
             if main_process():
                 logger.info("=> loading checkpoint '{}'".format(resume_path))
-            checkpoint = torch.load(resume_path, map_location=torch.device('cpu'))
+            checkpoint = jt.load(resume_path)
             args.start_epoch = checkpoint['epoch']
             new_param = checkpoint['state_dict']
             try:
@@ -123,7 +114,7 @@ def main():
     global args, logger, writer
     args = get_parser()
     logger = get_logger()
-    args.distributed = True if torch.cuda.device_count() > 1 else False
+    args.distributed = True if jt.has_cuda and jt.world_size > 1 else False
     if main_process():
         print(args)
 
@@ -162,10 +153,8 @@ def main():
         train_data = dataset.SemData(split=args.split, shot=args.shot, data_root=args.data_root,
                                      data_list=args.train_list, transform=train_transform, mode='train',
                                      ann_type=args.ann_type, data_set=args.data_set, use_split_coco=args.use_split_coco)
-    train_sampler = DistributedSampler(train_data) if args.distributed else None
-    train_loader = torch.utils.data.DataLoader(train_data, batch_size=args.batch_size, num_workers=args.workers,
-                                               pin_memory=True, sampler=train_sampler, drop_last=True,
-                                               shuffle=False if args.distributed else True)
+    train_loader = DataLoader(train_data, batch_size=args.batch_size, num_workers=args.workers,
+                              shuffle=False if args.distributed else True, drop_last=True)
     # Val
     if args.evaluate:
         if args.resized_val:
@@ -182,8 +171,8 @@ def main():
             val_data = dataset.SemData(split=args.split, shot=args.shot, data_root=args.data_root,
                                        data_list=args.val_list, transform=val_transform, mode='val',
                                        ann_type=args.ann_type, data_set=args.data_set, use_split_coco=args.use_split_coco)
-        val_loader = torch.utils.data.DataLoader(val_data, batch_size=args.batch_size_val, shuffle=False,
-                                                 num_workers=args.workers, pin_memory=False, sampler=None)
+        val_loader = DataLoader(val_data, batch_size=args.batch_size_val, shuffle=False,
+                                num_workers=args.workers)
 
     # ----------------------  TRAINVAL  ----------------------
     global best_miou, best_FBiou, best_piou, best_epoch, keep_epoch, val_num
@@ -209,8 +198,6 @@ def main():
 
         epoch_log = epoch + 1
         keep_epoch += 1
-        if args.distributed:
-            train_sampler.set_epoch(epoch)
 
             # ----------------------  TRAIN  ----------------------
         loss_train, mIoU_train, mAcc_train, allAcc_train = train(train_loader, val_loader, model, optimizer, optimizer_swin, epoch)
@@ -224,7 +211,7 @@ def main():
             logger.info('Saving checkpoint to: ' + filename)
             if osp.exists(filename):
                 os.remove(filename)
-            torch.save({'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict(), 'optimizer_swin': optimizer_swin.state_dict()},
+            jt.save({'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict(), 'optimizer_swin': optimizer_swin.state_dict()},
                        filename)
 
         # -----------------------  VAL  -----------------------
@@ -247,7 +234,7 @@ def main():
                         best_miou) + '.pth'
                 if main_process():
                     logger.info('Saving checkpoint to: ' + filename)
-                    torch.save({'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict(), 'optimizer_swin': optimizer_swin.state_dict()},
+                    jt.save({'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict(), 'optimizer_swin': optimizer_swin.state_dict()},
                                filename)
 
     total_time = time.time() - start_time
@@ -296,25 +283,23 @@ def train(train_loader, val_loader, model, optimizer, optimizer_swin, epoch):
         poly_learning_rate(optimizer, args.base_lr, current_iter, max_iter, power=args.power,
                            index_split=args.index_split, warmup=args.warmup, warmup_step=len(train_loader) // 2)
 
-        s_input = s_input.cuda(non_blocking=True)
-        s_mask = s_mask.cuda(non_blocking=True)
-        input = input.cuda(non_blocking=True)
-        target = target.cuda(non_blocking=True)
-
         output, main_loss, aux_loss1, aux_loss2 = model(s_x=s_input, s_y=s_mask, x=input, y_m=target, cat_idx=subcls)
 
         loss = main_loss + args.aux_weight1 * aux_loss1 + args.aux_weight2 * aux_loss2
 
-        optimizer.zero_grad()
-        optimizer_swin.zero_grad()
-        loss.backward()
+        optimizer.backward(loss, retain_graph=True)
+        optimizer_swin.backward(loss)
         optimizer.step()
         optimizer_swin.step()
 
         n = input.size(0)  # batch_size
 
         intersection, union, target = intersectionAndUnionGPU(output, target, args.classes, args.ignore_label)
-        intersection, union, target = intersection.cpu().numpy(), union.cpu().numpy(), target.cpu().numpy()
+        # 转换为 numpy 数组进行计算
+        intersection = intersection.numpy()
+        union = union.numpy()
+        target = target.numpy()
+        
         intersection_meter.update(intersection), union_meter.update(union), target_meter.update(target)
 
         accuracy = sum(intersection_meter.val) / (sum(target_meter.val) + 1e-10)  # allAcc
@@ -342,7 +327,7 @@ def train(train_loader, val_loader, model, optimizer, optimizer_swin, epoch):
                         'AuxLoss1 {aux_loss_meter1.val:.4f} '
                         'AuxLoss2 {aux_loss_meter2.val:.4f} '
                         'Loss {loss_meter.val:.4f} '
-                        'Accuracy {accuracy:.4f}.'.format(epoch + 1, args.epochs, i + 1, len(train_loader),
+                        'Accuracy {accuracy:.4f}.'.format(epoch + 1, args.epochs, i + 1, len(train_loader) // args.batch_size,
                                                           batch_time=batch_time,
                                                           data_time=data_time,
                                                           remain_time=remain_time,
@@ -374,7 +359,7 @@ def train(train_loader, val_loader, model, optimizer, optimizer_swin, epoch):
                         epoch - 0.5) + '_{:.4f}'.format(best_miou) + '.pth'
                 if main_process():
                     logger.info('Saving checkpoint to: ' + filename)
-                    torch.save(
+                    jt.save(
                         {'epoch': epoch - 0.5, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict(), 'optimizer_swin': optimizer_swin.state_dict()},
                         filename)
 
@@ -440,32 +425,30 @@ def validate(val_loader, model):
             iter_num += 1
             data_time.update(time.time() - end)
 
-            s_input = s_input.cuda(non_blocking=True)
-            s_mask = s_mask.cuda(non_blocking=True)
-            input = input.cuda(non_blocking=True)
-            target = target.cuda(non_blocking=True)
-            ori_label = ori_label.cuda(non_blocking=True)
-
             start_time = time.time()
             output = model(s_x=s_input, s_y=s_mask, x=input, y_m=target, cat_idx=subcls)
             model_time.update(time.time() - start_time)
 
             if args.ori_resize:  # 真值转化为方形
                 longerside = max(ori_label.size(1), ori_label.size(2))
-                backmask = torch.ones(ori_label.size(0), longerside, longerside, device='cuda') * 255
-                backmask[0, :ori_label.size(1), :ori_label.size(2)] = ori_label
+                backmask = jt.ones((ori_label.size(0), longerside, longerside)) * 255
+                backmask[:, :ori_label.size(1), :ori_label.size(2)] = ori_label
                 target = backmask.clone().long()
 
             output = F.interpolate(output, size=target.size()[1:], mode='bilinear', align_corners=True)
 
             loss = criterion(output, target)
 
-            output = output.max(1)[1]
+            output = output.argmax(dim=1)[0]
 
-            subcls = subcls[0].cpu().numpy()[0]
+            subcls = subcls[0].numpy()[0]
 
             intersection, union, new_target = intersectionAndUnionGPU(output, target, args.classes, args.ignore_label)
-            intersection, union, new_target = intersection.cpu().numpy(), union.cpu().numpy(), new_target.cpu().numpy()
+            # 转换为 numpy 数组进行计算
+            intersection = intersection.numpy()
+            union = union.numpy()
+            new_target = new_target.numpy()
+            
             intersection_meter.update(intersection), union_meter.update(union), target_meter.update(new_target)
             class_intersection_meter[subcls] += intersection[1]
             class_union_meter[subcls] += union[1]
