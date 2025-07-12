@@ -1,24 +1,20 @@
-import torch
-from torch import nn
-import torch.nn.functional as F
-from torchvision.models._utils import IntermediateLayerGetter
+import jittor as jt
+from jittor import nn
+import jittor.nn as F
 from model.backbone_res import *
 
 
-class FrozenBatchNorm2d(torch.nn.Module):
+class FrozenBatchNorm2d(jt.Module):
     """
     BatchNorm2d where the batch statistics and the affine parameters are fixed.
-    Copy-paste from torchvision.misc.ops with added eps before rqsrt,
-    without which any other models than torchvision.models.resnet[18,34,50,101]
-    produce nans.
     """
 
     def __init__(self, n):
         super(FrozenBatchNorm2d, self).__init__()
-        self.register_buffer("weight", torch.ones(n))
-        self.register_buffer("bias", torch.zeros(n))
-        self.register_buffer("running_mean", torch.zeros(n))
-        self.register_buffer("running_var", torch.ones(n))
+        self.weight = jt.ones(n)
+        self.bias = jt.zeros(n)
+        self.running_mean = jt.zeros(n)
+        self.running_var = jt.ones(n)
 
     def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
                               missing_keys, unexpected_keys, error_msgs):
@@ -26,11 +22,7 @@ class FrozenBatchNorm2d(torch.nn.Module):
         if num_batches_tracked_key in state_dict:
             del state_dict[num_batches_tracked_key]
 
-        super(FrozenBatchNorm2d, self)._load_from_state_dict(
-            state_dict, prefix, local_metadata, strict,
-            missing_keys, unexpected_keys, error_msgs)
-
-    def forward(self, x):
+    def execute(self, x):
         # move reshapes to the beginning
         # to make it fuser-friendly
         w = self.weight.reshape(1, -1, 1, 1)
@@ -38,7 +30,7 @@ class FrozenBatchNorm2d(torch.nn.Module):
         rv = self.running_var.reshape(1, -1, 1, 1)
         rm = self.running_mean.reshape(1, -1, 1, 1)
         eps = 1e-5
-        scale = w * (rv + eps).rsqrt()
+        scale = w * jt.rsqrt(rv + eps)
         bias = b - rm * scale
         return x * scale + bias
 
@@ -49,16 +41,16 @@ class BackboneBase(nn.Module):
         super().__init__()
         for name, parameter in backbone.named_parameters():
             if not train_backbone or 'layer2' not in name and 'layer3' not in name and 'layer4' not in name:
-                parameter.requires_grad_(False)
+                parameter.requires_grad = False
         if return_interm_layers:
             return_layers = {"layer1": "0", "layer2": "1", "layer3": "2", "layer4": "3"}
         else:
             return_layers = {'layer4': "0"}
-        self.body = IntermediateLayerGetter(backbone, return_layers=return_layers)
+        self.backbone = backbone
         self.num_channels = num_channels
 
-    def forward(self, x):
-        x = self.body(x)
+    def execute(self, x):
+        x = self.backbone(x)
         return x
 
 
@@ -80,3 +72,14 @@ class Backbone(BackboneBase):
             pretrained=resnets_dict[name][1], norm_layer=FrozenBatchNorm2d)
         num_channels = 512 if name in ('resnet18', 'resnet34') else 2048
         super().__init__(backbone, train_backbone, num_channels, return_interm_layers)
+
+
+if __name__ == "__main__":
+    backbone = Backbone('resnet50', train_backbone=False,
+                        return_interm_layers=True, dilation=[False, True, True])
+    print(backbone)
+    x = jt.randn(1, 3, 224, 224)
+    out = backbone(x)
+    print(out.keys())
+
+    # print(backbone.backbone.conv1.weight)

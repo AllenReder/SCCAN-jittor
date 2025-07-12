@@ -3,7 +3,7 @@ from jittor import nn
 import jittor.nn as F
 
 from model.ASPP import ASPP
-from model.backbone_utils_jittor import Backbone
+from model.backbone_utils import Backbone
 from model.swin_sccan import SwinTransformer
 from model.loss import WeightedDiceLoss
 
@@ -268,6 +268,13 @@ if __name__ == "__main__":
     
     args = get_parser()
     model = OneModel(args)
+    model.train()
+
+    # 输出每个参数是否是训练状态
+    for name, param in model.named_parameters():
+        print(f"{name}: {param.requires_grad}")
+    exit()
+
     # s_x: torch.Size([1, 1, 3, 473, 473]), s_y: torch.Size([1, 1, 473, 473]), x: torch.Size([1, 3, 473, 473]), y_m: torch.Size([1, 473, 473]), cat_idx: [tensor([2])]
     s_x = jt.randn(1, 1, 3, 473, 473)
     s_y = jt.randn(1, 1, 473, 473)
@@ -278,3 +285,23 @@ if __name__ == "__main__":
     print(output[1])
     print(output[2])
     print(output[3])
+
+
+    # optimizer
+    # optimizer, optimizer_swin = model.get_optim(model, args, LR=args.base_lr)
+    # print("优化器管理的参数名:")
+    # for idx, param_group in enumerate(optimizer.param_groups):
+    #     print(f"参数组 {idx}:")
+    #     params_set = set(id(p) for p in param_group['params'])
+    #     for name, param in model.named_parameters():
+    #         if id(param) in params_set:
+    #             print(f"  {name}")
+
+    # # 对于optimizer_swin
+    # print("\nSwin优化器管理的参数名:")
+    # for idx, param_group in enumerate(optimizer_swin.param_groups):
+    #     print(f"参数组 {idx}:")
+    #     params_set = set(id(p) for p in param_group['params'])
+    #     for name, param in model.named_parameters():
+    #         if id(param) in params_set:
+    #             print(f"  {name}")

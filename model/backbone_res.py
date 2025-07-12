@@ -1,8 +1,6 @@
-import torch
-from torch import Tensor
-import torch.nn as nn
-# from torchvision.models.utils import load_state_dict_from_url
-from torchvision._internally_replaced_utils import load_state_dict_from_url
+import jittor as jt
+from jittor import nn
+import jittor.nn as F
 from typing import Type, Any, Callable, Union, List, Optional
 from collections import OrderedDict
 
@@ -25,15 +23,15 @@ model_urls = {
 }
 
 
-def conv3x3(in_planes: int, out_planes: int, stride: int = 1, groups: int = 1, dilation: int = 1) -> nn.Conv2d:
+def conv3x3(in_planes: int, out_planes: int, stride: int = 1, groups: int = 1, dilation: int = 1) -> nn.Conv:
     """3x3 convolution with padding"""
-    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
+    return nn.Conv(in_planes, out_planes, kernel_size=3, stride=stride,
                      padding=dilation, groups=groups, bias=False, dilation=dilation)
 
 
-def conv1x1(in_planes: int, out_planes: int, stride: int = 1) -> nn.Conv2d:
+def conv1x1(in_planes: int, out_planes: int, stride: int = 1) -> nn.Conv:
     """1x1 convolution"""
-    return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False)
+    return nn.Conv(in_planes, out_planes, kernel_size=1, stride=stride, bias=False)
 
 
 class BasicBlock(nn.Module):
@@ -52,7 +50,7 @@ class BasicBlock(nn.Module):
     ) -> None:
         super(BasicBlock, self).__init__()
         if norm_layer is None:
-            norm_layer = nn.BatchNorm2d
+            norm_layer = nn.BatchNorm
         if groups != 1 or base_width != 64:
             raise ValueError('BasicBlock only supports groups=1 and base_width=64')
         if dilation > 1:
@@ -60,13 +58,13 @@ class BasicBlock(nn.Module):
         # Both self.conv1 and self.downsample layers downsample the input when stride != 1
         self.conv1 = conv3x3(inplanes, planes, stride)
         self.bn1 = norm_layer(planes)
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.ReLU()
         self.conv2 = conv3x3(planes, planes)
         self.bn2 = norm_layer(planes)
         self.downsample = downsample
         self.stride = stride
 
-    def forward(self, x: Tensor) -> Tensor:
+    def execute(self, x):
         identity = x
 
         out = self.conv1(x)
@@ -107,7 +105,7 @@ class Bottleneck(nn.Module):
     ) -> None:
         super(Bottleneck, self).__init__()
         if norm_layer is None:
-            norm_layer = nn.BatchNorm2d
+            norm_layer = nn.BatchNorm
         width = int(planes * (base_width / 64.)) * groups
         # Both self.conv2 and self.downsample layers downsample the input when stride != 1
         self.conv1 = conv1x1(inplanes, width)
@@ -116,11 +114,11 @@ class Bottleneck(nn.Module):
         self.bn2 = norm_layer(width)
         self.conv3 = conv1x1(width, planes * self.expansion)
         self.bn3 = norm_layer(planes * self.expansion)
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.ReLU()
         self.downsample = downsample
         self.stride = stride
 
-    def forward(self, x: Tensor) -> Tensor:
+    def execute(self, x):
         identity = x
 
         out = self.conv1(x)
@@ -159,7 +157,7 @@ class ResNet(nn.Module):
     ) -> None:
         super(ResNet, self).__init__()
         if norm_layer is None:
-            norm_layer = nn.BatchNorm2d
+            norm_layer = nn.BatchNorm
         self._norm_layer = norm_layer
 
         self.inplanes = 128 # 64
@@ -186,9 +184,9 @@ class ResNet(nn.Module):
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
         for m in self.modules():
-            if isinstance(m, nn.Conv2d):
+            if isinstance(m, nn.Conv):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
-            elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
+            elif isinstance(m, (nn.BatchNorm, nn.GroupNorm)):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
 
@@ -198,28 +196,28 @@ class ResNet(nn.Module):
         if zero_init_residual:
             for m in self.modules():
                 if isinstance(m, Bottleneck):
-                    nn.init.constant_(m.bn3.weight, 0)  # type: ignore[arg-type]
+                    nn.init.constant_(m.bn3.weight, 0)
                 elif isinstance(m, BasicBlock):
-                    nn.init.constant_(m.bn2.weight, 0)  # type: ignore[arg-type]
+                    nn.init.constant_(m.bn2.weight, 0)
 
     def _make_stem_layer(self, in_channels, stem_channels):
         """Make stem layer for ResNet."""
         if self.deep_stem:
             self.conv1 = conv3x3(in_channels, 64, stride=2)
             self.bn1 = self._norm_layer(64)
-            self.relu1 = nn.ReLU(inplace=True)
+            self.relu1 = nn.ReLU()
             self.conv2 = conv3x3(64, 64)
             self.bn2 = self._norm_layer(64)
-            self.relu2 = nn.ReLU(inplace=True)
+            self.relu2 = nn.ReLU()
             self.conv3 = conv3x3(64, 128)
             self.bn3 = self._norm_layer(128)
-            self.relu3 = nn.ReLU(inplace=True)
+            self.relu3 = nn.ReLU()
         else:
-            self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2, padding=3,
+            self.conv1 = nn.Conv(3, self.inplanes, kernel_size=7, stride=2, padding=3,
                                 bias=False)
             self.bn1 = self._norm_layer(self.inplanes)
-            self.relu = nn.ReLU(inplace=True)
-        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+            self.relu = nn.ReLU()
+        self.maxpool = nn.Pool(kernel_size=3, stride=2, padding=1, op="maximum")
 
     def _make_layer(self, block: Type[Union[BasicBlock, Bottleneck]], planes: int, blocks: int,
                     stride: int = 1, dilate: bool = False) -> nn.Sequential:
@@ -246,25 +244,39 @@ class ResNet(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def _forward_impl(self, x: Tensor) -> Tensor:
+    def _forward_impl(self, x):
         # See note [TorchScript super()]
         x = self.conv1(x)
         x = self.bn1(x)
-        x = self.relu(x)
+        x = self.relu1(x)
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x = self.relu2(x)
+        x = self.conv3(x)
+        x = self.bn3(x)
+        x = self.relu3(x)
         x = self.maxpool(x)
 
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
+        l1 = self.layer1(x)
+        l2 = self.layer2(l1)
+        l3 = self.layer3(l2)
+        l4 = self.layer4(l3)
+
+        out = dict()
+        out['0'] = l1
+        out['1'] = l2
+        out['2'] = l3
+        out['3'] = l4
+
+        return out
 
         # x = self.avgpool(x)
-        # x = torch.flatten(x, 1)
+        # x = jt.flatten(x, 1)
         # x = self.fc(x)
 
         return x
 
-    def forward(self, x: Tensor) -> Tensor:
+    def execute(self, x):
         return self._forward_impl(x)
 
 
@@ -282,7 +294,7 @@ def _resnet(
     if pretrained:
         # state_dict = load_state_dict_from_url(model_urls[arch],
         #                                       progress=progress)
-        state_dict = torch.load(pretrained, map_location='cpu')
+        state_dict = jt.load(pretrained)
         model.load_state_dict(state_dict)
     return model
 
