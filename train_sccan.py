@@ -271,14 +271,14 @@ def train(train_loader, val_loader, model, optimizer, optimizer_swin, epoch):
 
     end = time.time()
     val_time = 0.
-    max_iter = args.epochs * len(train_loader)
+    max_iter = args.epochs * len(train_loader) // args.batch_size
     if main_process():
         print('Warmup: {}'.format(args.warmup))
 
     for i, (input, target, s_input, s_mask, subcls) in enumerate(train_loader):
 
         data_time.update(time.time() - end)
-        current_iter = epoch * len(train_loader) + i + 1
+        current_iter = epoch * len(train_loader) // args.batch_size + i + 1
 
         poly_learning_rate(optimizer, args.base_lr, current_iter, max_iter, power=args.power,
                            index_split=args.index_split, warmup=args.warmup, warmup_step=len(train_loader) // 2)
@@ -344,7 +344,7 @@ def train(train_loader, val_loader, model, optimizer, optimizer_swin, epoch):
 
         # -----------------------  SubEpoch VAL  -----------------------
         if args.evaluate and args.SubEpoch_val and (args.epochs <= 100 and epoch % 1 == 0 and epoch > 0) and (
-                i == round(len(train_loader) / 2)):  # <if> max_epoch<=100 <do> half_epoch Val
+                i == round(len(train_loader) // args.batch_size / 2)):  # <if> max_epoch<=100 <do> half_epoch Val
             loss_val, FBIoU, mIoU, pIoU = validate(val_loader, model)
             val_num += 1
             # save model for <testing>
