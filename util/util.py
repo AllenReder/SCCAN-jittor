@@ -18,10 +18,8 @@ from scipy import ndimage
 
 # from util.get_weak_anns import find_bbox
 
-import torch
-from torch import nn
-import torch.backends.cudnn as cudnn
-import torch.nn.init as initer
+import jittor as jt
+from jittor import nn
 
 
 class AverageMeter(object):
@@ -85,17 +83,39 @@ def intersectionAndUnion(output, target, K, ignore_index=255):
 
 def intersectionAndUnionGPU(output, target, K, ignore_index=255):
     # 'K' classes, output and target sizes are N or N * L or N * H * W, each value in range 0 to K - 1.
-    assert (output.dim() in [1, 2, 3])
+    assert (output.ndim == target.ndim)
     assert output.shape == target.shape
-    output = output.view(-1)
-    target = target.view(-1)
-    output[target == ignore_index] = ignore_index
-    intersection = output[output == target]
-    area_intersection = torch.histc(intersection, bins=K, min=0, max=K - 1)
-    area_output = torch.histc(output, bins=K, min=0, max=K - 1)
-    area_target = torch.histc(target, bins=K, min=0, max=K - 1)
-    area_union = area_output + area_target - area_intersection
-    return area_intersection, area_union, area_target
+    output = output.reshape(-1)
+    target = target.reshape(-1)
+    
+    # 创建mask，忽略特定索引
+    output_mask = (output != ignore_index)
+    target_mask = (target != ignore_index)
+    mask = output_mask & target_mask
+    
+    # 筛选有效位置的输出和目标
+    output = output[mask]
+    target = target[mask]
+    
+    # 计算交集和并集
+    intersection = jt.zeros(K)
+    union = jt.zeros(K)
+    target_area = jt.zeros(K)
+    
+    for k in range(K):
+        # 计算类别k的交集
+        intersection_k = ((output == k) & (target == k)).sum()
+        intersection[k] = intersection_k
+        
+        # 计算类别k的并集
+        union_k = ((output == k) | (target == k)).sum()
+        union[k] = union_k
+        
+        # 计算类别k的目标区域
+        target_area_k = (target == k).sum()
+        target_area[k] = target_area_k
+    
+    return intersection, union, target_area
 
 
 def check_mkdir(dir_name):
@@ -119,7 +139,7 @@ def del_file(path):
 
 def init_weights(model, conv='kaiming', batchnorm='normal', linear='kaiming', lstm='kaiming'):
     """
-    :param model: Pytorch Model which is nn.Module
+    :param model: Jittor Model which is nn.Module
     :param conv:  'kaiming' or 'xavier'
     :param batchnorm: 'normal' or 'constant'
     :param linear: 'kaiming' or 'xavier'
@@ -128,45 +148,44 @@ def init_weights(model, conv='kaiming', batchnorm='normal', linear='kaiming', ls
     for m in model.modules():
         if isinstance(m, (nn.Conv1d, nn.Conv2d, nn.Conv3d)):
             if conv == 'kaiming':
-                initer.kaiming_normal_(m.weight)
+                nn.init.kaiming_normal_(m.weight)
             elif conv == 'xavier':
-                initer.xavier_normal_(m.weight)
+                nn.init.xavier_normal_(m.weight)
             else:
                 raise ValueError("init type of conv error.\n")
             if m.bias is not None:
-                initer.constant_(m.bias, 0)
+                nn.init.constant_(m.bias, 0)
 
-        elif isinstance(m,
-                        (nn.BatchNorm1d, nn.BatchNorm2d, nn.BatchNorm3d)):  # , BatchNorm1d, BatchNorm2d, BatchNorm3d)):
+        elif isinstance(m, (nn.BatchNorm1d, nn.BatchNorm2d, nn.BatchNorm3d)):
             if batchnorm == 'normal':
-                initer.normal_(m.weight, 1.0, 0.02)
+                nn.init.normal_(m.weight, 1.0, 0.02)
             elif batchnorm == 'constant':
-                initer.constant_(m.weight, 1.0)
+                nn.init.constant_(m.weight, 1.0)
             else:
                 raise ValueError("init type of batchnorm error.\n")
-            initer.constant_(m.bias, 0.0)
+            nn.init.constant_(m.bias, 0.0)
 
         elif isinstance(m, nn.Linear):
             if linear == 'kaiming':
-                initer.kaiming_normal_(m.weight)
+                nn.init.kaiming_normal_(m.weight)
             elif linear == 'xavier':
-                initer.xavier_normal_(m.weight)
+                nn.init.xavier_normal_(m.weight)
             else:
                 raise ValueError("init type of linear error.\n")
             if m.bias is not None:
-                initer.constant_(m.bias, 0)
+                nn.init.constant_(m.bias, 0)
 
         elif isinstance(m, nn.LSTM):
             for name, param in m.named_parameters():
                 if 'weight' in name:
                     if lstm == 'kaiming':
-                        initer.kaiming_normal_(param)
+                        nn.init.kaiming_normal_(param)
                     elif lstm == 'xavier':
-                        initer.xavier_normal_(param)
+                        nn.init.xavier_normal_(param)
                     else:
                         raise ValueError("init type of lstm error.\n")
                 elif 'bias' in name:
-                    initer.constant_(param, 0)
+                    nn.init.constant_(param, 0)
 
 
 def colorize(gray, palette):
@@ -180,20 +199,15 @@ def colorize(gray, palette):
 def get_model_para_number(model):
     total_number = 0
     learnable_number = 0
-    for para in model.parameters():
-        total_number += torch.numel(para)
-        if para.requires_grad == True:
-            learnable_number += torch.numel(para)
+    for param in model.parameters():
+        total_number += param.numel()
+        if param.requires_grad:
+            learnable_number += param.numel()
     return total_number, learnable_number
 
 
 def setup_seed(seed=2021, deterministic=False):
-    if deterministic:
-        cudnn.benchmark = False
-        cudnn.deterministic = True
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
+    jt.set_seed(seed)
     np.random.seed(seed)
     random.seed(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
@@ -268,19 +282,14 @@ def get_train_val_set(args):
 
 
 def is_same_model(model1, model2):
-    flag = 0
-    count = 0
-    for k, v in model1.state_dict().items():
-        model1_val = v
-        model2_val = model2.state_dict()[k]
-        if (model1_val == model2_val).all():
-            pass
-        else:
-            flag += 1
-            print('value of key <{}> mismatch'.format(k))
-        count += 1
-
-    return True if flag == 0 else False
+    if len(list(model1.parameters())) != len(list(model2.parameters())):
+        return False
+    
+    for p1, p2 in zip(model1.parameters(), model2.parameters()):
+        if p1.data.ne(p2.data).sum() > 0:
+            return False
+    
+    return True
 
 
 def fix_bn(m):
