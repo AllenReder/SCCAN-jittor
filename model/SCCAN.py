@@ -9,11 +9,10 @@ from model.loss import WeightedDiceLoss
 
 
 def Weighted_GAP(supp_feat, mask):
-    supp_feat = supp_feat * mask
-    feat_h, feat_w = supp_feat.shape[-2:][0], supp_feat.shape[-2:][1]
-    area = mask.mean(dims=(2,3), keepdims=True) * feat_h * feat_w + 0.0005
-    supp_feat_mean = (supp_feat.sum(dims=(2,3), keepdims=True) / (area - 0.0005))
-    return supp_feat_mean
+    masked_feat = supp_feat * mask
+    sum_feat = masked_feat.sum(dims=[2, 3], keepdims=True)
+    area = mask.sum(dims=[2, 3], keepdims=True) + 0.0005
+    return sum_feat / area
 
 
 class OneModel(nn.Module):
@@ -108,7 +107,7 @@ class OneModel(nn.Module):
         optimizer_swin = jt.optim.AdamW(
             [
                 {"params": [p for n, p in model.named_parameters() if "transformer" in n and p.requires_grad]}
-            ], lr=6e-5
+            ], lr=6e-5, weight_decay=1e-2
         )
         return optimizer, optimizer_swin
 
@@ -269,39 +268,5 @@ if __name__ == "__main__":
     args = get_parser()
     model = OneModel(args)
     model.train()
-
-    # 输出每个参数是否是训练状态
-    for name, param in model.named_parameters():
-        print(f"{name}: {param.requires_grad}")
-    exit()
-
-    # s_x: torch.Size([1, 1, 3, 473, 473]), s_y: torch.Size([1, 1, 473, 473]), x: torch.Size([1, 3, 473, 473]), y_m: torch.Size([1, 473, 473]), cat_idx: [tensor([2])]
-    s_x = jt.randn(1, 1, 3, 473, 473)
-    s_y = jt.randn(1, 1, 473, 473)
-    x = jt.randn(1, 3, 473, 473)
-    y_m = jt.randn(1, 473, 473)
-    output = model(x, s_x, s_y, y_m)
-    print(output[0])
-    print(output[1])
-    print(output[2])
-    print(output[3])
-
-
-    # optimizer
-    # optimizer, optimizer_swin = model.get_optim(model, args, LR=args.base_lr)
-    # print("优化器管理的参数名:")
-    # for idx, param_group in enumerate(optimizer.param_groups):
-    #     print(f"参数组 {idx}:")
-    #     params_set = set(id(p) for p in param_group['params'])
-    #     for name, param in model.named_parameters():
-    #         if id(param) in params_set:
-    #             print(f"  {name}")
-
-    # # 对于optimizer_swin
-    # print("\nSwin优化器管理的参数名:")
-    # for idx, param_group in enumerate(optimizer_swin.param_groups):
-    #     print(f"参数组 {idx}:")
-    #     params_set = set(id(p) for p in param_group['params'])
-    #     for name, param in model.named_parameters():
-    #         if id(param) in params_set:
-    #             print(f"  {name}")
+    print(model)
+    print(model.down_query[2])
