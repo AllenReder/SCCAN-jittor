@@ -235,9 +235,6 @@ def train(train_loader, val_loader, model, optimizer, optimizer_swin, epoch):
     global best_miou, best_FBiou, best_piou, best_epoch, keep_epoch, val_num
     batch_time = AverageMeter()
     data_time = AverageMeter()
-    main_loss_meter = AverageMeter()
-    aux_loss_meter1 = AverageMeter()
-    aux_loss_meter2 = AverageMeter()
     loss_meter = AverageMeter()
     intersection_meter = AverageMeter()
     union_meter = AverageMeter()
@@ -261,9 +258,7 @@ def train(train_loader, val_loader, model, optimizer, optimizer_swin, epoch):
         lr = poly_learning_rate(optimizer, args.base_lr, current_iter, max_iter, power=args.power,
                            index_split=args.index_split, warmup=args.warmup, warmup_step=batch_num // 2)
 
-        output, main_loss, aux_loss1, aux_loss2 = model(s_x=s_input, s_y=s_mask, x=input, y_m=target, cat_idx=subcls)
-
-        loss = main_loss + args.aux_weight1 * aux_loss1 + args.aux_weight2 * aux_loss2
+        output, loss = model(s_x=s_input, s_y=s_mask, x=input, y_m=target, cat_idx=subcls)
 
         optimizer.backward(loss, retain_graph=True)
         optimizer_swin.backward(loss)
@@ -273,7 +268,6 @@ def train(train_loader, val_loader, model, optimizer, optimizer_swin, epoch):
         n = input.size(0)  # batch_size
 
         intersection, union, target = intersectionAndUnionGPU(output, target, args.classes, args.ignore_label)
-        # 转换为 numpy 数组进行计算
         intersection = intersection.numpy()
         union = union.numpy()
         target = target.numpy()
@@ -282,9 +276,6 @@ def train(train_loader, val_loader, model, optimizer, optimizer_swin, epoch):
 
         accuracy = sum(intersection_meter.val) / (sum(target_meter.val) + 1e-10)  # allAcc
 
-        main_loss_meter.update(main_loss.item(), n)
-        aux_loss_meter1.update(aux_loss1.item(), n)
-        aux_loss_meter2.update(aux_loss2.item(), n)
         loss_meter.update(loss.item(), n)
 
         batch_time.update(time.time() - end - val_time)
@@ -301,24 +292,15 @@ def train(train_loader, val_loader, model, optimizer, optimizer_swin, epoch):
                         'Data {data_time.val:.3f} ({data_time.avg:.3f}) '
                         'Batch {batch_time.val:.3f} ({batch_time.avg:.3f}) '
                         'Remain {remain_time} '
-                        'MainLoss {main_loss_meter.val:.4f} '
-                        'AuxLoss1 {aux_loss_meter1.val:.4f} '
-                        'AuxLoss2 {aux_loss_meter2.val:.4f} '
                         'Loss {loss_meter.val:.4f} '
                         'Accuracy {accuracy:.4f}.'.format(epoch + 1, args.epochs, i + 1, batch_num,
                                                           batch_time=batch_time,
                                                           data_time=data_time,
                                                           remain_time=remain_time,
-                                                          main_loss_meter=main_loss_meter,
-                                                          aux_loss_meter1=aux_loss_meter1,
-                                                          aux_loss_meter2=aux_loss_meter2,
                                                           loss_meter=loss_meter,
                                                           accuracy=accuracy))
             if args.viz:
                 writer.add_scalar('loss_train', loss_meter.val, current_iter)
-                writer.add_scalar('loss_train_main', main_loss_meter.val, current_iter)
-                writer.add_scalar('loss_train_aux1', aux_loss_meter1.val, current_iter)
-                writer.add_scalar('loss_train_aux2', aux_loss_meter2.val, current_iter)
                 writer.add_scalar('lr', lr, current_iter)
 
         # -----------------------  SubEpoch VAL  -----------------------
@@ -360,7 +342,7 @@ def train(train_loader, val_loader, model, optimizer, optimizer_swin, epoch):
     for i in range(args.classes):
         logger.info('Class_{} Result: iou/accuracy {:.4f}/{:.4f}.'.format(i, iou_class[i], accuracy_class[i]))
 
-    return main_loss_meter.avg, mIoU, mAcc, allAcc
+    return loss_meter.avg, mIoU, mAcc, allAcc
 
 
 def validate(val_loader, model):
@@ -408,7 +390,7 @@ def validate(val_loader, model):
             output = model(s_x=s_input, s_y=s_mask, x=input, y_m=target, cat_idx=subcls)
             model_time.update(time.time() - start_time)
 
-            if args.ori_resize:  # 真值转化为方形
+            if args.ori_resize:
                 longerside = max(ori_label.size(1), ori_label.size(2))
                 backmask = jt.ones((ori_label.size(0), longerside, longerside)) * 255
                 backmask[:, :ori_label.size(1), :ori_label.size(2)] = ori_label
@@ -423,7 +405,6 @@ def validate(val_loader, model):
             subcls = subcls[0].numpy()[0]
 
             intersection, union, new_target = intersectionAndUnionGPU(output, target, args.classes, args.ignore_label)
-            # 转换为 numpy 数组进行计算
             intersection = intersection.numpy()
             union = union.numpy()
             new_target = new_target.numpy()
@@ -460,7 +441,7 @@ def validate(val_loader, model):
 
     class_miou = class_miou * 1.0 / len(class_intersection_meter)
 
-    logger.info('meanIoU---Val result: mIoU {:.4f}.'.format(class_miou))  # final
+    logger.info('meanIoU---Val result: mIoU {:.4f}.'.format(class_miou))
 
     logger.info('<<<<<<< Novel Results <<<<<<<')
     for i in range(split_gap):

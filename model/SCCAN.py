@@ -238,9 +238,7 @@ class OneModel(nn.Module):
         # ========================================
         if self.training:
             main_loss = self.criterion_dice(meta_out, y_m.long())
-            aux_loss1 = jt.zeros_like(main_loss)
-            aux_loss2 = jt.zeros_like(main_loss)
-            return meta_out.argmax(dim=1)[0], main_loss, aux_loss1, aux_loss2
+            return meta_out.argmax(dim=1)[0], main_loss
         else:
             return meta_out
 
