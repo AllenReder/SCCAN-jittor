@@ -21,7 +21,7 @@ from tensorboardX import SummaryWriter
 from model import SCCAN
 
 from util import dataset
-from util import transform, transform_tri, config
+from util import transform, config
 from util.util import AverageMeter, poly_learning_rate, intersectionAndUnionGPU, get_model_para_number, setup_seed, \
     get_logger, get_save_path, \
     is_same_model, fix_bn, sum_list, check_makedirs
@@ -32,10 +32,10 @@ cv2.setNumThreads(0)
 
 def get_parser():
     parser = argparse.ArgumentParser(description='Jittor Few-Shot Semantic Segmentation')
-    parser.add_argument('--arch', type=str, default='SCCAN')  #
+    parser.add_argument('--arch', type=str, default='SCCAN')
     parser.add_argument('--viz', action='store_true', default=False)
     parser.add_argument('--config', type=str, default='config/pascal/pascal_split0_resnet50.yaml',
-                        help='config file')  # coco/coco_split0_resnet50.yaml
+                        help='config file')
     parser.add_argument('--local_rank', type=int, default=-1,
                         help='number of cpu threads to use during batch generation')
     parser.add_argument('--opts', help='see config/pascal/pascal_split0_resnet50.yaml for all options', default=None,
@@ -58,16 +58,7 @@ def get_model(args):
     if hasattr(model, 'freeze_modules'):
         model.freeze_modules(model)
 
-    # Initialize process for distributed training
-    if args.distributed:
-        # Initialize Process Group
-        jt.distributed.init_process_group(backend='nccl')
-        print('args.local_rank: ', args.local_rank)
-        jt.flags.use_cuda = 1
-        jt.set_device(args.local_rank)
-        model.sync_parameters()
-    else:
-        jt.flags.use_cuda = 1
+    jt.flags.use_cuda = 1
 
     # Resume
     get_save_path(args)
@@ -77,8 +68,7 @@ def get_model(args):
     if args.resume:
         resume_path = osp.join(args.snapshot_path, args.resume)
         if os.path.isfile(resume_path):
-            if main_process():
-                logger.info("=> loading checkpoint '{}'".format(resume_path))
+            logger.info("=> loading checkpoint '{}'".format(resume_path))
             checkpoint = jt.load(resume_path)
             args.start_epoch = checkpoint['epoch']
             new_param = checkpoint['state_dict']
@@ -90,33 +80,24 @@ def get_model(args):
                 model.load_state_dict(new_param)
             optimizer.load_state_dict(checkpoint['optimizer'])
             optimizer_swin.load_state_dict(checkpoint['optimizer_swin'])
-            if main_process():
-                logger.info("=> loaded checkpoint '{}' (epoch {})".format(resume_path, checkpoint['epoch']))
+            logger.info("=> loaded checkpoint '{}' (epoch {})".format(resume_path, checkpoint['epoch']))
         else:
-            if main_process():
-                logger.info("=> no checkpoint found at '{}'".format(resume_path))
+            logger.info("=> no checkpoint found at '{}'".format(resume_path))
 
     # Get model para.
     total_number, learnable_number = get_model_para_number(model)
-    if main_process():
-        print('Number of Parameters: %d' % (total_number))
-        print('Number of Learnable Parameters: %d' % (learnable_number))
+    print('Number of Parameters: %d' % (total_number))
+    print('Number of Learnable Parameters: %d' % (learnable_number))
 
     time.sleep(5)
     return model, optimizer, optimizer_swin
-
-
-def main_process():
-    return not args.distributed or (args.distributed and (args.local_rank == 0))
 
 
 def main():
     global args, logger, writer
     args = get_parser()
     logger = get_logger()
-    args.distributed = True if jt.has_cuda and jt.world_size > 1 else False
-    if main_process():
-        print(args)
+    print(args)
 
     if args.manual_seed is not None:
         setup_seed(args.manual_seed, args.seed_deterministic)
@@ -126,13 +107,10 @@ def main():
     assert (args.train_h - 1) % 8 == 0 and (args.train_w - 1) % 8 == 0
 
     # Create model and optimizer
-    if main_process():
-        logger.info("=> creating model ...")
+    logger.info("=> creating model ...")
     model, optimizer, optimizer_swin = get_model(args)
-    if main_process():
-        logger.info(model)
-    if main_process() and args.viz:
-        writer = SummaryWriter(args.result_path)
+    logger.info(model)
+    writer = SummaryWriter(args.result_path)
 
     # ----------------------  DATASET  ----------------------
     value_scale = 255
@@ -154,7 +132,7 @@ def main():
                                      data_list=args.train_list, transform=train_transform, mode='train',
                                      ann_type=args.ann_type, data_set=args.data_set, use_split_coco=args.use_split_coco)
     train_loader = DataLoader(train_data, batch_size=args.batch_size, num_workers=args.workers,
-                              shuffle=False if args.distributed else True, drop_last=True)
+                              shuffle=True, drop_last=True)
     # Val
     if args.evaluate:
         if args.resized_val:
@@ -202,11 +180,11 @@ def main():
             # ----------------------  TRAIN  ----------------------
         loss_train, mIoU_train, mAcc_train, allAcc_train = train(train_loader, val_loader, model, optimizer, optimizer_swin, epoch)
 
-        if main_process() and args.viz:
+        if args.viz:
             writer.add_scalar('FBIoU_train', mIoU_train, epoch_log)
 
         # save model for <resuming>
-        if (epoch % args.save_freq == 0) and (epoch > 0) and main_process():
+        if (epoch % args.save_freq == 0) and (epoch > 0):
             filename = args.snapshot_path + '/epoch_{}.pth'.format(epoch)
             logger.info('Saving checkpoint to: ' + filename)
             if osp.exists(filename):
@@ -218,7 +196,7 @@ def main():
         if args.evaluate and epoch % 1 == 0:
             loss_val, FBIoU, mIoU, pIoU = validate(val_loader, model)
             val_num += 1
-            if main_process() and args.viz:
+            if args.viz:
                 writer.add_scalar('loss_val', loss_val, epoch_log)
                 writer.add_scalar('FBIoU_val', FBIoU, epoch_log)
                 writer.add_scalar('mIoU_val', mIoU, epoch_log)
@@ -232,25 +210,25 @@ def main():
                 else:
                     filename = args.snapshot_path + '/train{}_epoch_'.format(args.shot) + str(epoch) + '_{:.4f}'.format(
                         best_miou) + '.pth'
-                if main_process():
-                    logger.info('Saving checkpoint to: ' + filename)
-                    jt.save({'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict(), 'optimizer_swin': optimizer_swin.state_dict()},
-                               filename)
+                logger.info('Saving checkpoint to: ' + filename)
+                jt.save({'epoch': epoch, 
+                            'state_dict': model.state_dict(), 
+                            'optimizer': optimizer.state_dict(),
+                            'optimizer_swin': optimizer_swin.state_dict()}, filename)
 
     total_time = time.time() - start_time
     t_m, t_s = divmod(total_time, 60)
     t_h, t_m = divmod(t_m, 60)
     total_time = '{:02d}h {:02d}m {:02d}s'.format(int(t_h), int(t_m), int(t_s))
 
-    if main_process():
-        print('\nEpoch: {}/{} \t Total running time: {}'.format(epoch_log, args.epochs, total_time))
-        print('The number of models validated: {}'.format(val_num))
-        print('\n<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  Final Best Result   <<<<<<<<<<<<<<<<<<<<<<<<<<<<<')
-        print(args.arch + '\t Group:{} \t Best_step:{}'.format(args.split, best_epoch))
-        print('mIoU:{:.4f}'.format(best_miou))
-        print('FBIoU:{:.4f} \t pIoU:{:.4f}'.format(best_FBiou, best_piou))
-        print('>' * 80)
-        print('%s' % datetime.datetime.now())
+    print('\nEpoch: {}/{} \t Total running time: {}'.format(epoch_log, args.epochs, total_time))
+    print('The number of models validated: {}'.format(val_num))
+    print('\n<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  Final Best Result   <<<<<<<<<<<<<<<<<<<<<<<<<<<<<')
+    print(args.arch + '\t Group:{} \t Best_step:{}'.format(args.split, best_epoch))
+    print('mIoU:{:.4f}'.format(best_miou))
+    print('FBIoU:{:.4f} \t pIoU:{:.4f}'.format(best_FBiou, best_piou))
+    print('>' * 80)
+    print('%s' % datetime.datetime.now())
 
 
 def train(train_loader, val_loader, model, optimizer, optimizer_swin, epoch):
@@ -271,17 +249,17 @@ def train(train_loader, val_loader, model, optimizer, optimizer_swin, epoch):
 
     end = time.time()
     val_time = 0.
-    max_iter = args.epochs * len(train_loader) // args.batch_size
-    if main_process():
-        print('Warmup: {}'.format(args.warmup))
+    batch_num = len(train_loader) // args.batch_size
+    max_iter = args.epochs * batch_num
+    print('Warmup: {}'.format(args.warmup))
 
     for i, (input, target, s_input, s_mask, subcls) in enumerate(train_loader):
 
         data_time.update(time.time() - end)
-        current_iter = epoch * len(train_loader) // args.batch_size + i + 1
+        current_iter = epoch * batch_num + i + 1
 
-        poly_learning_rate(optimizer, args.base_lr, current_iter, max_iter, power=args.power,
-                           index_split=args.index_split, warmup=args.warmup, warmup_step=len(train_loader) // args.batch_size // 2)
+        lr = poly_learning_rate(optimizer, args.base_lr, current_iter, max_iter, power=args.power,
+                           index_split=args.index_split, warmup=args.warmup, warmup_step=batch_num // 2)
 
         output, main_loss, aux_loss1, aux_loss2 = model(s_x=s_input, s_y=s_mask, x=input, y_m=target, cat_idx=subcls)
 
@@ -318,7 +296,7 @@ def train(train_loader, val_loader, model, optimizer, optimizer_swin, epoch):
         t_h, t_m = divmod(t_m, 60)
         remain_time = '{:02d}:{:02d}:{:02d}'.format(int(t_h), int(t_m), int(t_s))
 
-        if (i + 1) % args.print_freq == 0 and main_process():
+        if (i + 1) % args.print_freq == 0:
             logger.info('Epoch: [{}/{}][{}/{}] '
                         'Data {data_time.val:.3f} ({data_time.avg:.3f}) '
                         'Batch {batch_time.val:.3f} ({batch_time.avg:.3f}) '
@@ -327,7 +305,7 @@ def train(train_loader, val_loader, model, optimizer, optimizer_swin, epoch):
                         'AuxLoss1 {aux_loss_meter1.val:.4f} '
                         'AuxLoss2 {aux_loss_meter2.val:.4f} '
                         'Loss {loss_meter.val:.4f} '
-                        'Accuracy {accuracy:.4f}.'.format(epoch + 1, args.epochs, i + 1, len(train_loader) // args.batch_size,
+                        'Accuracy {accuracy:.4f}.'.format(epoch + 1, args.epochs, i + 1, batch_num,
                                                           batch_time=batch_time,
                                                           data_time=data_time,
                                                           remain_time=remain_time,
@@ -341,10 +319,11 @@ def train(train_loader, val_loader, model, optimizer, optimizer_swin, epoch):
                 writer.add_scalar('loss_train_main', main_loss_meter.val, current_iter)
                 writer.add_scalar('loss_train_aux1', aux_loss_meter1.val, current_iter)
                 writer.add_scalar('loss_train_aux2', aux_loss_meter2.val, current_iter)
+                writer.add_scalar('lr', lr, current_iter)
 
         # -----------------------  SubEpoch VAL  -----------------------
         if args.evaluate and args.SubEpoch_val and (args.epochs <= 100 and epoch % 1 == 0 and epoch > 0) and (
-                i == round(len(train_loader) // args.batch_size / 2)):  # <if> max_epoch<=100 <do> half_epoch Val
+                i == round(batch_num / 2)):  # <if> max_epoch<=100 <do> half_epoch Val
             loss_val, FBIoU, mIoU, pIoU = validate(val_loader, model)
             val_num += 1
             # save model for <testing>
@@ -357,11 +336,13 @@ def train(train_loader, val_loader, model, optimizer, optimizer_swin, epoch):
                 else:
                     filename = args.snapshot_path + '/train{}_epoch_'.format(args.shot) + str(
                         epoch - 0.5) + '_{:.4f}'.format(best_miou) + '.pth'
-                if main_process():
-                    logger.info('Saving checkpoint to: ' + filename)
-                    jt.save(
-                        {'epoch': epoch - 0.5, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict(), 'optimizer_swin': optimizer_swin.state_dict()},
-                        filename)
+                logger.info('Saving checkpoint to: ' + filename)
+                jt.save(
+                    {'epoch': epoch - 0.5, 
+                        'state_dict': model.state_dict(), 
+                        'optimizer': optimizer.state_dict(),
+                        'optimizer_swin': optimizer_swin.state_dict()},
+                    filename)
 
             model.train()
             if args.fix_bn:
@@ -373,19 +354,17 @@ def train(train_loader, val_loader, model, optimizer, optimizer_swin, epoch):
     mAcc = np.mean(accuracy_class)
     allAcc = sum(intersection_meter.sum) / (sum(target_meter.sum) + 1e-10)
 
-    if main_process():
-        logger.info(
-            'Train result at epoch [{}/{}]: mIoU/mAcc/allAcc {:.4f}/{:.4f}/{:.4f}.'.format(epoch, args.epochs, mIoU,
-                                                                                           mAcc, allAcc))
-        for i in range(args.classes):
-            logger.info('Class_{} Result: iou/accuracy {:.4f}/{:.4f}.'.format(i, iou_class[i], accuracy_class[i]))
+    logger.info(
+        'Train result at epoch [{}/{}]: mIoU/mAcc/allAcc {:.4f}/{:.4f}/{:.4f}.'.format(epoch, args.epochs, mIoU,
+                                                                                        mAcc, allAcc))
+    for i in range(args.classes):
+        logger.info('Class_{} Result: iou/accuracy {:.4f}/{:.4f}.'.format(i, iou_class[i], accuracy_class[i]))
 
     return main_loss_meter.avg, mIoU, mAcc, allAcc
 
 
 def validate(val_loader, model):
-    if main_process():
-        logger.info('>>>>>>>>>>>>>>>> Start Evaluation >>>>>>>>>>>>>>>>')
+    logger.info('>>>>>>>>>>>>>>>> Start Evaluation >>>>>>>>>>>>>>>>')
     batch_time = AverageMeter()
     model_time = AverageMeter()
     data_time = AverageMeter()
@@ -457,7 +436,7 @@ def validate(val_loader, model):
             loss_meter.update(loss.item(), input.size(0))
             batch_time.update(time.time() - end)
             end = time.time()
-            if ((i + 1) % round((test_num / 100)) == 0) and main_process():
+            if ((i + 1) % round((test_num / 100)) == 0):
                 logger.info('Test: [{}/{}] '
                             'Data {data_time.val:.3f} ({data_time.avg:.3f}) '
                             'Batch {batch_time.val:.3f} ({batch_time.avg:.3f}) '
@@ -481,19 +460,18 @@ def validate(val_loader, model):
 
     class_miou = class_miou * 1.0 / len(class_intersection_meter)
 
-    if main_process():
-        logger.info('meanIoU---Val result: mIoU {:.4f}.'.format(class_miou))  # final
+    logger.info('meanIoU---Val result: mIoU {:.4f}.'.format(class_miou))  # final
 
-        logger.info('<<<<<<< Novel Results <<<<<<<')
-        for i in range(split_gap):
-            logger.info('Class_{} Result: iou {:.4f}.'.format(i + 1, class_iou_class[i]))
+    logger.info('<<<<<<< Novel Results <<<<<<<')
+    for i in range(split_gap):
+        logger.info('Class_{} Result: iou {:.4f}.'.format(i + 1, class_iou_class[i]))
 
-        logger.info('FBIoU---Val result: FBIoU {:.4f}.'.format(mIoU))
-        for i in range(args.classes):
-            logger.info('Class_{} Result: iou {:.4f}.'.format(i, iou_class[i]))
-        logger.info('<<<<<<<<<<<<<<<<< End Evaluation <<<<<<<<<<<<<<<<<')
+    logger.info('FBIoU---Val result: FBIoU {:.4f}.'.format(mIoU))
+    for i in range(args.classes):
+        logger.info('Class_{} Result: iou {:.4f}.'.format(i, iou_class[i]))
+    logger.info('<<<<<<<<<<<<<<<<< End Evaluation <<<<<<<<<<<<<<<<<')
 
-        print('total time: {:.4f}, avg inference time: {:.4f}, count: {}'.format(val_time, model_time.avg, test_num))
+    print('total time: {:.4f}, avg inference time: {:.4f}, count: {}'.format(val_time, model_time.avg, test_num))
 
     return loss_meter.avg, mIoU, class_miou, iou_class[1]
 
