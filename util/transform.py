@@ -8,7 +8,7 @@ import cv2
 import jittor as jt
 
 manual_seed = 123
-jt.set_seed(manual_seed)
+jt.set_global_seed(manual_seed)
 np.random.seed(manual_seed)
 random.seed(manual_seed)
 
