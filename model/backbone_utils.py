@@ -12,9 +12,13 @@ class FrozenBatchNorm2d(jt.Module):
     def __init__(self, n):
         super(FrozenBatchNorm2d, self).__init__()
         self.weight = jt.ones(n)
+        self.weight.stop_grad()
         self.bias = jt.zeros(n)
+        self.bias.stop_grad()
         self.running_mean = jt.zeros(n)
+        self.running_mean.stop_grad()
         self.running_var = jt.ones(n)
+        self.running_var.stop_grad()
 
     def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
                               missing_keys, unexpected_keys, error_msgs):
