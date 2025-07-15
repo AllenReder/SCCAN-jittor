@@ -48,8 +48,17 @@ def step_learning_rate(optimizer, base_lr, epoch, step_epoch, multiplier=0.1):
         param_group['lr'] = lr
 
 
-def poly_learning_rate(optimizer, base_lr, curr_iter, max_iter, power=0.9, index_split=-1, scale_lr=10., warmup=False,
-                       warmup_step=500):
+def poly_learning_rate(
+        optimizer, 
+        base_lr, 
+        curr_iter, 
+        max_iter, 
+        power=0.9, 
+        index_split=-1, # always -1
+        scale_lr=10., 
+        warmup=False,
+        warmup_step=500
+        ):
     """poly learning rate policy"""
     if warmup and curr_iter < warmup_step:
         lr = base_lr * (0.1 + 0.9 * (curr_iter / warmup_step))
@@ -59,11 +68,14 @@ def poly_learning_rate(optimizer, base_lr, curr_iter, max_iter, power=0.9, index
     # if curr_iter % 50 == 0:   
     #     print('Base LR: {:.4f}, Curr LR: {:.4f}, Warmup: {}.'.format(base_lr, lr, (warmup and curr_iter < warmup_step)))     
 
+    optimizer.lr = lr * scale_lr
     for index, param_group in enumerate(optimizer.param_groups):
         if index <= index_split:
             param_group['lr'] = lr
         else:
             param_group['lr'] = lr * scale_lr  # 10x LR
+    
+    return lr * scale_lr ### DEBUG
 
 
 def intersectionAndUnion(output, target, K, ignore_index=255):
@@ -81,41 +93,42 @@ def intersectionAndUnion(output, target, K, ignore_index=255):
     return area_intersection, area_union, area_target
 
 
+def jt_histc(input, bins, min=0., max=0.):
+    if min == 0 and max == 0:
+        min, max = input.min(), input.max()
+    assert min < max
+    bin_length = (max - min) / bins
+    
+    # 筛选在范围内的值
+    valid_input = input[jt.logical_and(input >= min, input <= max)]
+    
+    # 特殊处理最大值，确保它落在最后一个箱子中
+    indices = jt.floor((valid_input - min) / bin_length).int()
+    indices = jt.minimum(indices, jt.array(bins-1))  # 确保索引在有效范围内
+    
+    # 使用 jittor 的 one_hot 和 sum 来实现直方图统计
+    hist = jt.zeros(bins).float()
+    for i in range(bins):
+        hist[i] = (indices == i).sum().float()
+    
+    return hist
+
 def intersectionAndUnionGPU(output, target, K, ignore_index=255):
     # 'K' classes, output and target sizes are N or N * L or N * H * W, each value in range 0 to K - 1.
-    assert (output.ndim == target.ndim)
+    assert (output.dim() in [1, 2, 3])
     assert output.shape == target.shape
-    output = output.reshape(-1)
-    target = target.reshape(-1)
-    
-    # 创建mask，忽略特定索引
-    output_mask = (output != ignore_index)
-    target_mask = (target != ignore_index)
-    mask = output_mask & target_mask
-    
-    # 筛选有效位置的输出和目标
-    output = output[mask]
-    target = target[mask]
-    
-    # 计算交集和并集
-    intersection = jt.zeros(K)
-    union = jt.zeros(K)
-    target_area = jt.zeros(K)
-    
-    for k in range(K):
-        # 计算类别k的交集
-        intersection_k = ((output == k) & (target == k)).sum()
-        intersection[k] = intersection_k
-        
-        # 计算类别k的并集
-        union_k = ((output == k) | (target == k)).sum()
-        union[k] = union_k
-        
-        # 计算类别k的目标区域
-        target_area_k = (target == k).sum()
-        target_area[k] = target_area_k
-    
-    return intersection, union, target_area
+    output = output.view(-1)
+    target = target.view(-1)
+    output[target == ignore_index] = ignore_index
+    intersection = output[output == target]
+    intersection = intersection.float()
+    output = output.float()
+    target = target.float()
+    area_intersection = jt_histc(intersection, bins=K, min=0, max=K - 1)
+    area_output = jt_histc(output, bins=K, min=0, max=K - 1)
+    area_target = jt_histc(target, bins=K, min=0, max=K - 1)
+    area_union = area_output + area_target - area_intersection
+    return area_intersection, area_union, area_target
 
 
 def check_mkdir(dir_name):
@@ -207,14 +220,13 @@ def get_model_para_number(model):
 
 
 def setup_seed(seed=2021, deterministic=False):
-    jt.set_seed(seed)
     np.random.seed(seed)
     random.seed(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
+    jt.set_global_seed(seed)
 
 
 def get_logger():
-    logger_name = "main-logger"
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
     handler = logging.StreamHandler()
@@ -282,14 +294,19 @@ def get_train_val_set(args):
 
 
 def is_same_model(model1, model2):
-    if len(list(model1.parameters())) != len(list(model2.parameters())):
-        return False
-    
-    for p1, p2 in zip(model1.parameters(), model2.parameters()):
-        if p1.data.ne(p2.data).sum() > 0:
-            return False
-    
-    return True
+    flag = 0
+    count = 0
+    for k, v in model1.state_dict().items():
+        model1_val = v
+        model2_val = model2.state_dict()[k]
+        if (model1_val == model2_val).all():
+            pass
+        else:
+            flag += 1
+            print('value of key <{}> mismatch'.format(k))
+        count += 1
+
+    return True if flag == 0 else False
 
 
 def fix_bn(m):
