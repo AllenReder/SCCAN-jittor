@@ -1,0 +1,717 @@
+[38;5;2m[i 0716 11:54:58.036029 48 compiler.py:956] Jittor(1.3.9.14) src: /data1/fanlyu/anaconda3/envs/jittor/lib/python3.7/site-packages/jittor[m
+[38;5;2m[i 0716 11:54:58.038856 48 compiler.py:957] g++ at /usr/bin/g++(11.4.0)[m
+[38;5;2m[i 0716 11:54:58.038902 48 compiler.py:958] cache_path: /data1/fanlyu/.cache/jittor/jt1.3.9/g++11.4.0/py3.7.16/Linux-5.15.0-1xe3/IntelRXeonRGolx62/efa5/default[m
+[38;5;2m[i 0716 11:54:58.087460 48 install_cuda.py:96] cuda_driver_version: [12, 4][m
+[38;5;2m[i 0716 11:54:58.087659 48 install_cuda.py:84] restart /data1/fanlyu/anaconda3/envs/jittor/bin/python ['test_sccan.py', '--config=config/pascal/pascal_split3_resnet50_torch.yaml', '--viz'][m
+[38;5;2m[i 0716 11:54:58.260245 56 compiler.py:956] Jittor(1.3.9.14) src: /data1/fanlyu/anaconda3/envs/jittor/lib/python3.7/site-packages/jittor[m
+[38;5;2m[i 0716 11:54:58.264963 56 compiler.py:957] g++ at /usr/bin/g++(11.4.0)[m
+[38;5;2m[i 0716 11:54:58.265009 56 compiler.py:958] cache_path: /data1/fanlyu/.cache/jittor/jt1.3.9/g++11.4.0/py3.7.16/Linux-5.15.0-1xe3/IntelRXeonRGolx62/efa5/default[m
+[38;5;2m[i 0716 11:54:58.313318 56 install_cuda.py:96] cuda_driver_version: [12, 4][m
+[38;5;2m[i 0716 11:54:58.317404 56 __init__.py:412] Found /data1/fanlyu/.cache/jittor/jtcuda/cuda12.2_cudnn8_linux/bin/nvcc(12.2.140) at /data1/fanlyu/.cache/jittor/jtcuda/cuda12.2_cudnn8_linux/bin/nvcc.[m
+[38;5;2m[i 0716 11:54:58.321609 56 __init__.py:412] Found addr2line(2.38) at /usr/bin/addr2line.[m
+[38;5;2m[i 0716 11:54:58.436889 56 compiler.py:1013] cuda key:cu12.2.140_sm_89[m
+[38;5;2m[i 0716 11:54:58.753070 56 __init__.py:227] Total mem: 503.54GB, using 16 procs for compiling.[m
+[38;5;2m[i 0716 11:54:58.820778 56 jit_compiler.cc:28] Load cc_path: /usr/bin/g++[m
+[38;5;2m[i 0716 11:54:58.933020 56 init.cc:63] Found cuda archs: [89,][m
+[2025-07-16 11:55:00,690 INFO test_sccan.py line 102 2199034] => creating model ...
+[38;5;2m[i 0716 11:55:00.929799 56 cuda_flags.cc:49] CUDA enabled.[m
+[2025-07-16 11:55:01,030 INFO test_sccan.py line 66 2199034] => loading checkpoint 'exp/pascal/SCCAN/split3_1shot/resnet50/snapshot/torch_train_epoch_156_0.6014.pth'
+[2025-07-16 11:55:01,132 INFO test_sccan.py line 76 2199034] => loaded checkpoint 'exp/pascal/SCCAN/split3_1shot/resnet50/snapshot/torch_train_epoch_156_0.6014.pth' (epoch 156)
+[2025-07-16 11:55:06,140 INFO test_sccan.py line 104 2199034] OneModel(
+    criterion: CrossEntropyLoss(None, ignore_index=255)
+    criterion_dice: WeightedDiceLoss(1.0, reduction=sum)
+    backbone: Backbone(
+        backbone: ResNet(
+            conv1: Conv(3, 64, (3, 3), (2, 2), (1, 1), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+            bn1: FrozenBatchNorm2d(None)
+            relu1: relu()
+            conv2: Conv(64, 64, (3, 3), (1, 1), (1, 1), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+            bn2: FrozenBatchNorm2d(None)
+            relu2: relu()
+            conv3: Conv(64, 128, (3, 3), (1, 1), (1, 1), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+            bn3: FrozenBatchNorm2d(None)
+            relu3: relu()
+            maxpool: Pool((3, 3), (2, 2), (1, 1), dilation=None, return_indices=None, ceil_mode=False, count_include_pad=True, op=maximum, item=None)
+            layer1: Sequential(
+                0: Bottleneck(
+                    conv1: Conv(128, 64, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn1: FrozenBatchNorm2d(None)
+                    conv2: Conv(64, 64, (3, 3), (1, 1), (1, 1), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn2: FrozenBatchNorm2d(None)
+                    conv3: Conv(64, 256, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn3: FrozenBatchNorm2d(None)
+                    relu: relu()
+                    downsample: Sequential(
+                        0: Conv(128, 256, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                        1: FrozenBatchNorm2d(None)
+                    )
+                )
+                1: Bottleneck(
+                    conv1: Conv(256, 64, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn1: FrozenBatchNorm2d(None)
+                    conv2: Conv(64, 64, (3, 3), (1, 1), (1, 1), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn2: FrozenBatchNorm2d(None)
+                    conv3: Conv(64, 256, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn3: FrozenBatchNorm2d(None)
+                    relu: relu()
+                )
+                2: Bottleneck(
+                    conv1: Conv(256, 64, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn1: FrozenBatchNorm2d(None)
+                    conv2: Conv(64, 64, (3, 3), (1, 1), (1, 1), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn2: FrozenBatchNorm2d(None)
+                    conv3: Conv(64, 256, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn3: FrozenBatchNorm2d(None)
+                    relu: relu()
+                )
+            )
+            layer2: Sequential(
+                0: Bottleneck(
+                    conv1: Conv(256, 128, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn1: FrozenBatchNorm2d(None)
+                    conv2: Conv(128, 128, (3, 3), (2, 2), (1, 1), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn2: FrozenBatchNorm2d(None)
+                    conv3: Conv(128, 512, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn3: FrozenBatchNorm2d(None)
+                    relu: relu()
+                    downsample: Sequential(
+                        0: Conv(256, 512, (1, 1), (2, 2), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                        1: FrozenBatchNorm2d(None)
+                    )
+                )
+                1: Bottleneck(
+                    conv1: Conv(512, 128, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn1: FrozenBatchNorm2d(None)
+                    conv2: Conv(128, 128, (3, 3), (1, 1), (1, 1), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn2: FrozenBatchNorm2d(None)
+                    conv3: Conv(128, 512, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn3: FrozenBatchNorm2d(None)
+                    relu: relu()
+                )
+                2: Bottleneck(
+                    conv1: Conv(512, 128, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn1: FrozenBatchNorm2d(None)
+                    conv2: Conv(128, 128, (3, 3), (1, 1), (1, 1), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn2: FrozenBatchNorm2d(None)
+                    conv3: Conv(128, 512, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn3: FrozenBatchNorm2d(None)
+                    relu: relu()
+                )
+                3: Bottleneck(
+                    conv1: Conv(512, 128, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn1: FrozenBatchNorm2d(None)
+                    conv2: Conv(128, 128, (3, 3), (1, 1), (1, 1), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn2: FrozenBatchNorm2d(None)
+                    conv3: Conv(128, 512, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn3: FrozenBatchNorm2d(None)
+                    relu: relu()
+                )
+            )
+            layer3: Sequential(
+                0: Bottleneck(
+                    conv1: Conv(512, 256, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn1: FrozenBatchNorm2d(None)
+                    conv2: Conv(256, 256, (3, 3), (1, 1), (1, 1), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn2: FrozenBatchNorm2d(None)
+                    conv3: Conv(256, 1024, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn3: FrozenBatchNorm2d(None)
+                    relu: relu()
+                    downsample: Sequential(
+                        0: Conv(512, 1024, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                        1: FrozenBatchNorm2d(None)
+                    )
+                )
+                1: Bottleneck(
+                    conv1: Conv(1024, 256, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn1: FrozenBatchNorm2d(None)
+                    conv2: Conv(256, 256, (3, 3), (1, 1), (2, 2), (2, 2), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn2: FrozenBatchNorm2d(None)
+                    conv3: Conv(256, 1024, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn3: FrozenBatchNorm2d(None)
+                    relu: relu()
+                )
+                2: Bottleneck(
+                    conv1: Conv(1024, 256, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn1: FrozenBatchNorm2d(None)
+                    conv2: Conv(256, 256, (3, 3), (1, 1), (2, 2), (2, 2), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn2: FrozenBatchNorm2d(None)
+                    conv3: Conv(256, 1024, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn3: FrozenBatchNorm2d(None)
+                    relu: relu()
+                )
+                3: Bottleneck(
+                    conv1: Conv(1024, 256, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn1: FrozenBatchNorm2d(None)
+                    conv2: Conv(256, 256, (3, 3), (1, 1), (2, 2), (2, 2), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn2: FrozenBatchNorm2d(None)
+                    conv3: Conv(256, 1024, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn3: FrozenBatchNorm2d(None)
+                    relu: relu()
+                )
+                4: Bottleneck(
+                    conv1: Conv(1024, 256, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn1: FrozenBatchNorm2d(None)
+                    conv2: Conv(256, 256, (3, 3), (1, 1), (2, 2), (2, 2), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn2: FrozenBatchNorm2d(None)
+                    conv3: Conv(256, 1024, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn3: FrozenBatchNorm2d(None)
+                    relu: relu()
+                )
+                5: Bottleneck(
+                    conv1: Conv(1024, 256, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn1: FrozenBatchNorm2d(None)
+                    conv2: Conv(256, 256, (3, 3), (1, 1), (2, 2), (2, 2), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn2: FrozenBatchNorm2d(None)
+                    conv3: Conv(256, 1024, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn3: FrozenBatchNorm2d(None)
+                    relu: relu()
+                )
+            )
+            layer4: Sequential(
+                0: Bottleneck(
+                    conv1: Conv(1024, 512, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn1: FrozenBatchNorm2d(None)
+                    conv2: Conv(512, 512, (3, 3), (1, 1), (2, 2), (2, 2), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn2: FrozenBatchNorm2d(None)
+                    conv3: Conv(512, 2048, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn3: FrozenBatchNorm2d(None)
+                    relu: relu()
+                    downsample: Sequential(
+                        0: Conv(1024, 2048, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                        1: FrozenBatchNorm2d(None)
+                    )
+                )
+                1: Bottleneck(
+                    conv1: Conv(2048, 512, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn1: FrozenBatchNorm2d(None)
+                    conv2: Conv(512, 512, (3, 3), (1, 1), (4, 4), (4, 4), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn2: FrozenBatchNorm2d(None)
+                    conv3: Conv(512, 2048, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn3: FrozenBatchNorm2d(None)
+                    relu: relu()
+                )
+                2: Bottleneck(
+                    conv1: Conv(2048, 512, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn1: FrozenBatchNorm2d(None)
+                    conv2: Conv(512, 512, (3, 3), (1, 1), (4, 4), (4, 4), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn2: FrozenBatchNorm2d(None)
+                    conv3: Conv(512, 2048, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+                    bn3: FrozenBatchNorm2d(None)
+                    relu: relu()
+                )
+            )
+            avgpool: AdaptiveAvgPool2d((1, 1))
+            fc: Linear(2048, 1000, float32[1000,], None)
+        )
+    )
+    down_query: Sequential(
+        0: Conv(1536, 256, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+        1: relu()
+        2: Dropout2d(0.5, is_train=False)
+    )
+    down_supp: Sequential(
+        0: Conv(1536, 256, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+        1: relu()
+        2: Dropout2d(0.5, is_train=False)
+    )
+    init_merge_query: Sequential(
+        0: Conv(513, 256, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+    )
+    init_merge_supp: Sequential(
+        0: Conv(513, 256, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+    )
+    transformer: SwinTransformer(
+        pos_drop: Dropout(0.0, is_train=False)
+        layers: Sequential(
+            0: BasicLayer(
+                blocks: Sequential(
+                    0: SwinTransformerBlock(
+                        norm1: LayerNorm((256,), 1e-05, elementwise_affine=True)
+                        attn_q: CrossWindowAttention(
+                            q: Linear(256, 256, float32[256,], None)
+                            kv: Linear(256, 512, float32[512,], None)
+                            attn_drop: Dropout(0.0, is_train=False)
+                            proj: Linear(256, 256, float32[256,], None)
+                            proj_drop: Dropout(0.0, is_train=False)
+                            softmax: softmax()
+                        )
+                        attn_s: CrossWindowAttention(
+                            q: Linear(256, 256, float32[256,], None)
+                            kv: Linear(256, 512, float32[512,], None)
+                            attn_drop: Dropout(0.0, is_train=False)
+                            proj: Linear(256, 256, float32[256,], None)
+                            proj_drop: Dropout(0.0, is_train=False)
+                            softmax: softmax()
+                        )
+                        drop_path: Identity(None, None)
+                        norm2: LayerNorm((256,), 1e-05, elementwise_affine=True)
+                        mlp_q: Mlp(
+                            fc1: Linear(256, 256, float32[256,], None)
+                            act: gelu()
+                            fc2: Linear(256, 256, float32[256,], None)
+                            drop: Dropout(0.0, is_train=False)
+                        )
+                        mlp_s: Mlp(
+                            fc1: Linear(256, 256, float32[256,], None)
+                            act: gelu()
+                            fc2: Linear(256, 256, float32[256,], None)
+                            drop: Dropout(0.0, is_train=False)
+                        )
+                    )
+                    1: SwinTransformerBlock(
+                        norm1: LayerNorm((256,), 1e-05, elementwise_affine=True)
+                        attn_q: CrossWindowAttention(
+                            q: Linear(256, 256, float32[256,], None)
+                            kv: Linear(256, 512, float32[512,], None)
+                            attn_drop: Dropout(0.0, is_train=False)
+                            proj: Linear(256, 256, float32[256,], None)
+                            proj_drop: Dropout(0.0, is_train=False)
+                            softmax: softmax()
+                        )
+                        attn_s: CrossWindowAttention(
+                            q: Linear(256, 256, float32[256,], None)
+                            kv: Linear(256, 512, float32[512,], None)
+                            attn_drop: Dropout(0.0, is_train=False)
+                            proj: Linear(256, 256, float32[256,], None)
+                            proj_drop: Dropout(0.0, is_train=False)
+                            softmax: softmax()
+                        )
+                        drop_path: Identity(None, None)
+                        norm2: LayerNorm((256,), 1e-05, elementwise_affine=True)
+                        mlp_q: Mlp(
+                            fc1: Linear(256, 256, float32[256,], None)
+                            act: gelu()
+                            fc2: Linear(256, 256, float32[256,], None)
+                            drop: Dropout(0.0, is_train=False)
+                        )
+                        mlp_s: Mlp(
+                            fc1: Linear(256, 256, float32[256,], None)
+                            act: gelu()
+                            fc2: Linear(256, 256, float32[256,], None)
+                            drop: Dropout(0.0, is_train=False)
+                        )
+                    )
+                    2: SwinTransformerBlock(
+                        norm1: LayerNorm((256,), 1e-05, elementwise_affine=True)
+                        attn_q: CrossWindowAttention(
+                            q: Linear(256, 256, float32[256,], None)
+                            kv: Linear(256, 512, float32[512,], None)
+                            attn_drop: Dropout(0.0, is_train=False)
+                            proj: Linear(256, 256, float32[256,], None)
+                            proj_drop: Dropout(0.0, is_train=False)
+                            softmax: softmax()
+                        )
+                        attn_s: CrossWindowAttention(
+                            q: Linear(256, 256, float32[256,], None)
+                            kv: Linear(256, 512, float32[512,], None)
+                            attn_drop: Dropout(0.0, is_train=False)
+                            proj: Linear(256, 256, float32[256,], None)
+                            proj_drop: Dropout(0.0, is_train=False)
+                            softmax: softmax()
+                        )
+                        drop_path: Identity(None, None)
+                        norm2: LayerNorm((256,), 1e-05, elementwise_affine=True)
+                        mlp_q: Mlp(
+                            fc1: Linear(256, 256, float32[256,], None)
+                            act: gelu()
+                            fc2: Linear(256, 256, float32[256,], None)
+                            drop: Dropout(0.0, is_train=False)
+                        )
+                        mlp_s: Mlp(
+                            fc1: Linear(256, 256, float32[256,], None)
+                            act: gelu()
+                            fc2: Linear(256, 256, float32[256,], None)
+                            drop: Dropout(0.0, is_train=False)
+                        )
+                    )
+                    3: SwinTransformerBlock(
+                        norm1: LayerNorm((256,), 1e-05, elementwise_affine=True)
+                        attn_q: CrossWindowAttention(
+                            q: Linear(256, 256, float32[256,], None)
+                            kv: Linear(256, 512, float32[512,], None)
+                            attn_drop: Dropout(0.0, is_train=False)
+                            proj: Linear(256, 256, float32[256,], None)
+                            proj_drop: Dropout(0.0, is_train=False)
+                            softmax: softmax()
+                        )
+                        attn_s: CrossWindowAttention(
+                            q: Linear(256, 256, float32[256,], None)
+                            kv: Linear(256, 512, float32[512,], None)
+                            attn_drop: Dropout(0.0, is_train=False)
+                            proj: Linear(256, 256, float32[256,], None)
+                            proj_drop: Dropout(0.0, is_train=False)
+                            softmax: softmax()
+                        )
+                        drop_path: Identity(None, None)
+                        norm2: LayerNorm((256,), 1e-05, elementwise_affine=True)
+                        mlp_q: Mlp(
+                            fc1: Linear(256, 256, float32[256,], None)
+                            act: gelu()
+                            fc2: Linear(256, 256, float32[256,], None)
+                            drop: Dropout(0.0, is_train=False)
+                        )
+                        mlp_s: Mlp(
+                            fc1: Linear(256, 256, float32[256,], None)
+                            act: gelu()
+                            fc2: Linear(256, 256, float32[256,], None)
+                            drop: Dropout(0.0, is_train=False)
+                        )
+                    )
+                    4: SwinTransformerBlock(
+                        norm1: LayerNorm((256,), 1e-05, elementwise_affine=True)
+                        attn_q: CrossWindowAttention(
+                            q: Linear(256, 256, float32[256,], None)
+                            kv: Linear(256, 512, float32[512,], None)
+                            attn_drop: Dropout(0.0, is_train=False)
+                            proj: Linear(256, 256, float32[256,], None)
+                            proj_drop: Dropout(0.0, is_train=False)
+                            softmax: softmax()
+                        )
+                        attn_s: CrossWindowAttention(
+                            q: Linear(256, 256, float32[256,], None)
+                            kv: Linear(256, 512, float32[512,], None)
+                            attn_drop: Dropout(0.0, is_train=False)
+                            proj: Linear(256, 256, float32[256,], None)
+                            proj_drop: Dropout(0.0, is_train=False)
+                            softmax: softmax()
+                        )
+                        drop_path: Identity(None, None)
+                        norm2: LayerNorm((256,), 1e-05, elementwise_affine=True)
+                        mlp_q: Mlp(
+                            fc1: Linear(256, 256, float32[256,], None)
+                            act: gelu()
+                            fc2: Linear(256, 256, float32[256,], None)
+                            drop: Dropout(0.0, is_train=False)
+                        )
+                        mlp_s: Mlp(
+                            fc1: Linear(256, 256, float32[256,], None)
+                            act: gelu()
+                            fc2: Linear(256, 256, float32[256,], None)
+                            drop: Dropout(0.0, is_train=False)
+                        )
+                    )
+                    5: SwinTransformerBlock(
+                        norm1: LayerNorm((256,), 1e-05, elementwise_affine=True)
+                        attn_q: CrossWindowAttention(
+                            q: Linear(256, 256, float32[256,], None)
+                            kv: Linear(256, 512, float32[512,], None)
+                            attn_drop: Dropout(0.0, is_train=False)
+                            proj: Linear(256, 256, float32[256,], None)
+                            proj_drop: Dropout(0.0, is_train=False)
+                            softmax: softmax()
+                        )
+                        attn_s: CrossWindowAttention(
+                            q: Linear(256, 256, float32[256,], None)
+                            kv: Linear(256, 512, float32[512,], None)
+                            attn_drop: Dropout(0.0, is_train=False)
+                            proj: Linear(256, 256, float32[256,], None)
+                            proj_drop: Dropout(0.0, is_train=False)
+                            softmax: softmax()
+                        )
+                        drop_path: Identity(None, None)
+                        norm2: LayerNorm((256,), 1e-05, elementwise_affine=True)
+                        mlp_q: Mlp(
+                            fc1: Linear(256, 256, float32[256,], None)
+                            act: gelu()
+                            fc2: Linear(256, 256, float32[256,], None)
+                            drop: Dropout(0.0, is_train=False)
+                        )
+                        mlp_s: Mlp(
+                            fc1: Linear(256, 256, float32[256,], None)
+                            act: gelu()
+                            fc2: Linear(256, 256, float32[256,], None)
+                            drop: Dropout(0.0, is_train=False)
+                        )
+                    )
+                    6: SwinTransformerBlock(
+                        norm1: LayerNorm((256,), 1e-05, elementwise_affine=True)
+                        attn_q: CrossWindowAttention(
+                            q: Linear(256, 256, float32[256,], None)
+                            kv: Linear(256, 512, float32[512,], None)
+                            attn_drop: Dropout(0.0, is_train=False)
+                            proj: Linear(256, 256, float32[256,], None)
+                            proj_drop: Dropout(0.0, is_train=False)
+                            softmax: softmax()
+                        )
+                        attn_s: CrossWindowAttention(
+                            q: Linear(256, 256, float32[256,], None)
+                            kv: Linear(256, 512, float32[512,], None)
+                            attn_drop: Dropout(0.0, is_train=False)
+                            proj: Linear(256, 256, float32[256,], None)
+                            proj_drop: Dropout(0.0, is_train=False)
+                            softmax: softmax()
+                        )
+                        drop_path: Identity(None, None)
+                        norm2: LayerNorm((256,), 1e-05, elementwise_affine=True)
+                        mlp_q: Mlp(
+                            fc1: Linear(256, 256, float32[256,], None)
+                            act: gelu()
+                            fc2: Linear(256, 256, float32[256,], None)
+                            drop: Dropout(0.0, is_train=False)
+                        )
+                        mlp_s: Mlp(
+                            fc1: Linear(256, 256, float32[256,], None)
+                            act: gelu()
+                            fc2: Linear(256, 256, float32[256,], None)
+                            drop: Dropout(0.0, is_train=False)
+                        )
+                    )
+                    7: SwinTransformerBlock(
+                        norm1: LayerNorm((256,), 1e-05, elementwise_affine=True)
+                        attn_q: CrossWindowAttention(
+                            q: Linear(256, 256, float32[256,], None)
+                            kv: Linear(256, 512, float32[512,], None)
+                            attn_drop: Dropout(0.0, is_train=False)
+                            proj: Linear(256, 256, float32[256,], None)
+                            proj_drop: Dropout(0.0, is_train=False)
+                            softmax: softmax()
+                        )
+                        attn_s: CrossWindowAttention(
+                            q: Linear(256, 256, float32[256,], None)
+                            kv: Linear(256, 512, float32[512,], None)
+                            attn_drop: Dropout(0.0, is_train=False)
+                            proj: Linear(256, 256, float32[256,], None)
+                            proj_drop: Dropout(0.0, is_train=False)
+                            softmax: softmax()
+                        )
+                        drop_path: Identity(None, None)
+                        norm2: LayerNorm((256,), 1e-05, elementwise_affine=True)
+                        mlp_q: Mlp(
+                            fc1: Linear(256, 256, float32[256,], None)
+                            act: gelu()
+                            fc2: Linear(256, 256, float32[256,], None)
+                            drop: Dropout(0.0, is_train=False)
+                        )
+                        mlp_s: Mlp(
+                            fc1: Linear(256, 256, float32[256,], None)
+                            act: gelu()
+                            fc2: Linear(256, 256, float32[256,], None)
+                            drop: Dropout(0.0, is_train=False)
+                        )
+                    )
+                )
+            )
+        )
+        norm0: LayerNorm((256,), 1e-05, elementwise_affine=True)
+    )
+    ASPP_meta: ASPP(
+        layer6_0: Sequential(
+            0: Conv(256, 256, (1, 1), (1, 1), (0, 0), (1, 1), 1, float32[256,], None, None, Kw=None, fan=None, i=None, bound=None)
+            1: relu()
+        )
+        layer6_1: Sequential(
+            0: Conv(256, 256, (1, 1), (1, 1), (0, 0), (1, 1), 1, float32[256,], None, None, Kw=None, fan=None, i=None, bound=None)
+            1: relu()
+        )
+        layer6_2: Sequential(
+            0: Conv(256, 256, (3, 3), (1, 1), (6, 6), (6, 6), 1, float32[256,], None, None, Kw=None, fan=None, i=None, bound=None)
+            1: relu()
+        )
+        layer6_3: Sequential(
+            0: Conv(256, 256, (3, 3), (1, 1), (12, 12), (12, 12), 1, float32[256,], None, None, Kw=None, fan=None, i=None, bound=None)
+            1: relu()
+        )
+        layer6_4: Sequential(
+            0: Conv(256, 256, (3, 3), (1, 1), (18, 18), (18, 18), 1, float32[256,], None, None, Kw=None, fan=None, i=None, bound=None)
+            1: relu()
+        )
+    )
+    res1_meta: Sequential(
+        0: Conv(1280, 256, (1, 1), (1, 1), (0, 0), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+        1: relu()
+    )
+    res2_meta: Sequential(
+        0: Conv(256, 256, (3, 3), (1, 1), (1, 1), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+        1: relu()
+        2: Conv(256, 256, (3, 3), (1, 1), (1, 1), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+        3: relu()
+    )
+    cls_meta: Sequential(
+        0: Conv(256, 256, (3, 3), (1, 1), (1, 1), (1, 1), 1, None, None, None, Kw=None, fan=None, i=None, bound=None)
+        1: relu()
+        2: Dropout2d(0.1, is_train=False)
+        3: Conv(256, 2, (1, 1), (1, 1), (0, 0), (1, 1), 1, float32[2,], None, None, Kw=None, fan=None, i=None, bound=None)
+    )
+    relu: relu()
+)
+[2025-07-16 11:55:06,145 INFO test_sccan.py line 166 2199034] >>>>>>>>>>>>>>>> Start Evaluation >>>>>>>>>>>>>>>>
+SubEpoch_val: True
+ann_type: mask
+arch: SCCAN
+aux_weight1: 1.0
+aux_weight2: 1.0
+base_lr: 0.005
+batch_size: 8
+batch_size_val: 1
+classes: 2
+data_root: ../data/VOCdevkit2012/VOC2012
+data_set: pascal
+epochs: 200
+evaluate: True
+fix_bn: True
+fix_random_seed_val: True
+ignore_label: 255
+index_split: -1
+kshot_trans_dim: 2
+layers: 50
+low_fea: layer2
+manual_seed: 321
+merge: final
+merge_tau: 0.9
+momentum: 0.9
+opts: None
+ori_resize: True
+padding_label: 255
+power: 0.9
+print_freq: 10
+resized_val: True
+resume: None
+rotate_max: 10
+rotate_min: -10
+save_freq: 10
+scale_max: 1.1
+scale_min: 0.9
+seed_deterministic: False
+shot: 1
+split: 3
+start_epoch: 0
+stop_interval: 75
+train_h: 473
+train_list: ./lists/pascal/voc_sbd_merge_noduplicate.txt
+train_w: 473
+use_split_coco: False
+val_list: ./lists/pascal/val.txt
+val_size: 473
+vgg: False
+viz: True
+warmup: False
+weight: torch_train_epoch_156_0.6014.pth
+weight_decay: 0.0001
+workers: 8
+zoom_factor: 8
+Number of Parameters: 37107626
+Number of Learnable Parameters: 11373314
+sub_list:  [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+sub_val_list:  [16, 17, 18, 19, 20]
+Val: [1/1] 	 Seed: 321
+[2025-07-16 11:55:09,872 INFO test_sccan.py line 251 2199034] Test: [10/1000] Data 0.001 (0.226) Batch 0.047 (0.372) Remain 00:06:08 Loss 0.0039 (0.3948) Accuracy 0.9987.
+[2025-07-16 11:55:10,363 INFO test_sccan.py line 251 2199034] Test: [20/1000] Data 0.001 (0.113) Batch 0.051 (0.211) Remain 00:03:26 Loss 0.0788 (0.3102) Accuracy 0.9868.
+[2025-07-16 11:55:10,858 INFO test_sccan.py line 251 2199034] Test: [30/1000] Data 0.001 (0.076) Batch 0.050 (0.157) Remain 00:02:32 Loss 0.7133 (0.4287) Accuracy 0.8223.
+[2025-07-16 11:55:11,366 INFO test_sccan.py line 251 2199034] Test: [40/1000] Data 0.001 (0.057) Batch 0.050 (0.130) Remain 00:02:05 Loss 2.3250 (0.4210) Accuracy 0.7670.
+[2025-07-16 11:55:11,869 INFO test_sccan.py line 251 2199034] Test: [50/1000] Data 0.001 (0.046) Batch 0.048 (0.114) Remain 00:01:48 Loss 0.8778 (0.4276) Accuracy 0.8629.
+[2025-07-16 11:55:12,366 INFO test_sccan.py line 251 2199034] Test: [60/1000] Data 0.001 (0.038) Batch 0.050 (0.104) Remain 00:01:37 Loss 0.1168 (0.4383) Accuracy 0.9578.
+[2025-07-16 11:55:12,878 INFO test_sccan.py line 251 2199034] Test: [70/1000] Data 0.001 (0.033) Batch 0.061 (0.096) Remain 00:01:29 Loss 0.0439 (0.4338) Accuracy 0.9926.
+[2025-07-16 11:55:13,377 INFO test_sccan.py line 251 2199034] Test: [80/1000] Data 0.001 (0.029) Batch 0.049 (0.090) Remain 00:01:23 Loss 0.2412 (0.4592) Accuracy 0.9108.
+[2025-07-16 11:55:13,873 INFO test_sccan.py line 251 2199034] Test: [90/1000] Data 0.001 (0.026) Batch 0.047 (0.086) Remain 00:01:18 Loss 0.1961 (0.4684) Accuracy 0.8890.
+[2025-07-16 11:55:14,372 INFO test_sccan.py line 251 2199034] Test: [100/1000] Data 0.001 (0.023) Batch 0.050 (0.082) Remain 00:01:14 Loss 0.5562 (0.4856) Accuracy 0.9022.
+[2025-07-16 11:55:14,885 INFO test_sccan.py line 251 2199034] Test: [110/1000] Data 0.001 (0.021) Batch 0.049 (0.079) Remain 00:01:10 Loss 0.2278 (0.4967) Accuracy 0.9171.
+[2025-07-16 11:55:15,396 INFO test_sccan.py line 251 2199034] Test: [120/1000] Data 0.001 (0.020) Batch 0.062 (0.077) Remain 00:01:07 Loss 0.7785 (0.5242) Accuracy 0.9476.
+[2025-07-16 11:55:15,892 INFO test_sccan.py line 251 2199034] Test: [130/1000] Data 0.001 (0.018) Batch 0.047 (0.075) Remain 00:01:05 Loss 2.1551 (0.5708) Accuracy 0.7452.
+[2025-07-16 11:55:16,396 INFO test_sccan.py line 251 2199034] Test: [140/1000] Data 0.001 (0.017) Batch 0.050 (0.073) Remain 00:01:02 Loss 0.1622 (0.5640) Accuracy 0.9341.
+[2025-07-16 11:55:16,910 INFO test_sccan.py line 251 2199034] Test: [150/1000] Data 0.001 (0.016) Batch 0.062 (0.072) Remain 00:01:00 Loss 0.0301 (0.5538) Accuracy 0.9914.
+[2025-07-16 11:55:17,409 INFO test_sccan.py line 251 2199034] Test: [160/1000] Data 0.001 (0.015) Batch 0.051 (0.070) Remain 00:00:59 Loss 2.7281 (0.5542) Accuracy 0.4406.
+[2025-07-16 11:55:17,894 INFO test_sccan.py line 251 2199034] Test: [170/1000] Data 0.001 (0.014) Batch 0.046 (0.069) Remain 00:00:57 Loss 0.4373 (0.5516) Accuracy 0.7973.
+[2025-07-16 11:55:18,384 INFO test_sccan.py line 251 2199034] Test: [180/1000] Data 0.001 (0.013) Batch 0.050 (0.068) Remain 00:00:55 Loss 3.3663 (0.5500) Accuracy 0.5381.
+[2025-07-16 11:55:18,873 INFO test_sccan.py line 251 2199034] Test: [190/1000] Data 0.001 (0.013) Batch 0.048 (0.067) Remain 00:00:54 Loss 0.0131 (0.5362) Accuracy 0.9953.
+[2025-07-16 11:55:19,360 INFO test_sccan.py line 251 2199034] Test: [200/1000] Data 0.001 (0.012) Batch 0.051 (0.066) Remain 00:00:52 Loss 0.5511 (0.5510) Accuracy 0.8648.
+[2025-07-16 11:55:19,843 INFO test_sccan.py line 251 2199034] Test: [210/1000] Data 0.001 (0.012) Batch 0.046 (0.065) Remain 00:00:51 Loss 0.1146 (0.5360) Accuracy 0.9617.
+[2025-07-16 11:55:20,331 INFO test_sccan.py line 251 2199034] Test: [220/1000] Data 0.001 (0.011) Batch 0.050 (0.064) Remain 00:00:50 Loss 0.0161 (0.5473) Accuracy 0.9935.
+[2025-07-16 11:55:20,819 INFO test_sccan.py line 251 2199034] Test: [230/1000] Data 0.001 (0.011) Batch 0.048 (0.064) Remain 00:00:49 Loss 0.0469 (0.5379) Accuracy 0.9823.
+[2025-07-16 11:55:21,307 INFO test_sccan.py line 251 2199034] Test: [240/1000] Data 0.001 (0.010) Batch 0.050 (0.063) Remain 00:00:48 Loss 0.0102 (0.5356) Accuracy 0.9959.
+[2025-07-16 11:55:21,791 INFO test_sccan.py line 251 2199034] Test: [250/1000] Data 0.001 (0.010) Batch 0.046 (0.063) Remain 00:00:46 Loss 0.0151 (0.5209) Accuracy 0.9941.
+[2025-07-16 11:55:22,281 INFO test_sccan.py line 251 2199034] Test: [260/1000] Data 0.001 (0.010) Batch 0.051 (0.062) Remain 00:00:45 Loss 1.6879 (0.5248) Accuracy 0.6911.
+[2025-07-16 11:55:22,771 INFO test_sccan.py line 251 2199034] Test: [270/1000] Data 0.001 (0.009) Batch 0.048 (0.062) Remain 00:00:44 Loss 0.0346 (0.5342) Accuracy 0.9907.
+[2025-07-16 11:55:23,262 INFO test_sccan.py line 251 2199034] Test: [280/1000] Data 0.001 (0.009) Batch 0.052 (0.061) Remain 00:00:44 Loss 0.3030 (0.5447) Accuracy 0.8961.
+[2025-07-16 11:55:23,746 INFO test_sccan.py line 251 2199034] Test: [290/1000] Data 0.001 (0.009) Batch 0.046 (0.061) Remain 00:00:43 Loss 0.0179 (0.5650) Accuracy 0.9936.
+[2025-07-16 11:55:24,236 INFO test_sccan.py line 251 2199034] Test: [300/1000] Data 0.001 (0.008) Batch 0.050 (0.060) Remain 00:00:42 Loss 0.6541 (0.5639) Accuracy 0.8394.
+[2025-07-16 11:55:24,725 INFO test_sccan.py line 251 2199034] Test: [310/1000] Data 0.001 (0.008) Batch 0.048 (0.060) Remain 00:00:41 Loss 0.3747 (0.5530) Accuracy 0.9166.
+[2025-07-16 11:55:25,216 INFO test_sccan.py line 251 2199034] Test: [320/1000] Data 0.001 (0.008) Batch 0.051 (0.060) Remain 00:00:40 Loss 0.4946 (0.5435) Accuracy 0.8371.
+[2025-07-16 11:55:25,703 INFO test_sccan.py line 251 2199034] Test: [330/1000] Data 0.001 (0.008) Batch 0.047 (0.059) Remain 00:00:39 Loss 0.3821 (0.5397) Accuracy 0.8931.
+[2025-07-16 11:55:26,480 INFO test_sccan.py line 251 2199034] Test: [346/1000] Data 0.001 (0.007) Batch 0.047 (0.059) Remain 00:00:38 Loss 0.0039 (0.5346) Accuracy 0.9987.
+[2025-07-16 11:55:26,968 INFO test_sccan.py line 251 2199034] Test: [356/1000] Data 0.001 (0.007) Batch 0.050 (0.058) Remain 00:00:37 Loss 0.0773 (0.5242) Accuracy 0.9868.
+[2025-07-16 11:55:27,457 INFO test_sccan.py line 251 2199034] Test: [366/1000] Data 0.001 (0.007) Batch 0.049 (0.058) Remain 00:00:36 Loss 0.8148 (0.5293) Accuracy 0.8104.
+[2025-07-16 11:55:27,946 INFO test_sccan.py line 251 2199034] Test: [376/1000] Data 0.001 (0.007) Batch 0.051 (0.058) Remain 00:00:36 Loss 0.3377 (0.5220) Accuracy 0.9416.
+[2025-07-16 11:55:28,432 INFO test_sccan.py line 251 2199034] Test: [386/1000] Data 0.001 (0.007) Batch 0.047 (0.058) Remain 00:00:35 Loss 0.4921 (0.5181) Accuracy 0.8646.
+[2025-07-16 11:55:28,921 INFO test_sccan.py line 251 2199034] Test: [396/1000] Data 0.001 (0.007) Batch 0.050 (0.058) Remain 00:00:34 Loss 0.1242 (0.5147) Accuracy 0.9570.
+[2025-07-16 11:55:29,409 INFO test_sccan.py line 251 2199034] Test: [406/1000] Data 0.001 (0.006) Batch 0.048 (0.057) Remain 00:00:34 Loss 0.0433 (0.5183) Accuracy 0.9926.
+[2025-07-16 11:55:29,898 INFO test_sccan.py line 251 2199034] Test: [416/1000] Data 0.001 (0.006) Batch 0.051 (0.057) Remain 00:00:33 Loss 0.1786 (0.5181) Accuracy 0.9344.
+[2025-07-16 11:55:30,384 INFO test_sccan.py line 251 2199034] Test: [426/1000] Data 0.001 (0.006) Batch 0.046 (0.057) Remain 00:00:32 Loss 0.1234 (0.5201) Accuracy 0.9360.
+[2025-07-16 11:55:30,872 INFO test_sccan.py line 251 2199034] Test: [436/1000] Data 0.001 (0.006) Batch 0.051 (0.057) Remain 00:00:31 Loss 0.5624 (0.5216) Accuracy 0.9009.
+[2025-07-16 11:55:31,360 INFO test_sccan.py line 251 2199034] Test: [446/1000] Data 0.001 (0.006) Batch 0.048 (0.057) Remain 00:00:31 Loss 0.8907 (0.5277) Accuracy 0.8181.
+[2025-07-16 11:55:31,851 INFO test_sccan.py line 251 2199034] Test: [456/1000] Data 0.001 (0.006) Batch 0.049 (0.056) Remain 00:00:30 Loss 0.4442 (0.5339) Accuracy 0.9442.
+[2025-07-16 11:55:32,337 INFO test_sccan.py line 251 2199034] Test: [466/1000] Data 0.001 (0.006) Batch 0.047 (0.056) Remain 00:00:30 Loss 1.9925 (0.5480) Accuracy 0.7403.
+[2025-07-16 11:55:32,827 INFO test_sccan.py line 251 2199034] Test: [476/1000] Data 0.001 (0.006) Batch 0.050 (0.056) Remain 00:00:29 Loss 0.1341 (0.5468) Accuracy 0.9546.
+[2025-07-16 11:55:33,315 INFO test_sccan.py line 251 2199034] Test: [486/1000] Data 0.001 (0.005) Batch 0.048 (0.056) Remain 00:00:28 Loss 0.0283 (0.5448) Accuracy 0.9918.
+[2025-07-16 11:55:33,804 INFO test_sccan.py line 251 2199034] Test: [496/1000] Data 0.001 (0.005) Batch 0.050 (0.056) Remain 00:00:28 Loss 0.0407 (0.5392) Accuracy 0.9875.
+[2025-07-16 11:55:34,288 INFO test_sccan.py line 251 2199034] Test: [506/1000] Data 0.001 (0.005) Batch 0.047 (0.056) Remain 00:00:27 Loss 0.6478 (0.5398) Accuracy 0.6966.
+[2025-07-16 11:55:34,779 INFO test_sccan.py line 251 2199034] Test: [516/1000] Data 0.001 (0.005) Batch 0.051 (0.055) Remain 00:00:26 Loss 2.4908 (0.5364) Accuracy 0.5441.
+[2025-07-16 11:55:35,267 INFO test_sccan.py line 251 2199034] Test: [526/1000] Data 0.001 (0.005) Batch 0.049 (0.055) Remain 00:00:26 Loss 0.0138 (0.5315) Accuracy 0.9946.
+[2025-07-16 11:55:35,755 INFO test_sccan.py line 251 2199034] Test: [536/1000] Data 0.001 (0.005) Batch 0.051 (0.055) Remain 00:00:25 Loss 0.4358 (0.5380) Accuracy 0.8740.
+[2025-07-16 11:55:36,238 INFO test_sccan.py line 251 2199034] Test: [546/1000] Data 0.001 (0.005) Batch 0.046 (0.055) Remain 00:00:25 Loss 0.1027 (0.5358) Accuracy 0.9695.
+[2025-07-16 11:55:36,728 INFO test_sccan.py line 251 2199034] Test: [556/1000] Data 0.001 (0.005) Batch 0.050 (0.055) Remain 00:00:24 Loss 0.0379 (0.5424) Accuracy 0.9821.
+[2025-07-16 11:55:37,217 INFO test_sccan.py line 251 2199034] Test: [566/1000] Data 0.001 (0.005) Batch 0.049 (0.055) Remain 00:00:23 Loss 0.0462 (0.5376) Accuracy 0.9823.
+[2025-07-16 11:55:37,710 INFO test_sccan.py line 251 2199034] Test: [576/1000] Data 0.001 (0.005) Batch 0.050 (0.055) Remain 00:00:23 Loss 0.0100 (0.5387) Accuracy 0.9959.
+[2025-07-16 11:55:38,199 INFO test_sccan.py line 251 2199034] Test: [586/1000] Data 0.001 (0.005) Batch 0.046 (0.055) Remain 00:00:22 Loss 0.0151 (0.5322) Accuracy 0.9940.
+[2025-07-16 11:55:38,689 INFO test_sccan.py line 251 2199034] Test: [596/1000] Data 0.001 (0.005) Batch 0.051 (0.055) Remain 00:00:22 Loss 3.2646 (0.5383) Accuracy 0.5009.
+[2025-07-16 11:55:39,180 INFO test_sccan.py line 251 2199034] Test: [606/1000] Data 0.001 (0.005) Batch 0.049 (0.055) Remain 00:00:21 Loss 0.0345 (0.5403) Accuracy 0.9907.
+[2025-07-16 11:55:39,671 INFO test_sccan.py line 251 2199034] Test: [616/1000] Data 0.001 (0.005) Batch 0.051 (0.054) Remain 00:00:20 Loss 0.0743 (0.5480) Accuracy 0.9773.
+[2025-07-16 11:55:40,154 INFO test_sccan.py line 251 2199034] Test: [626/1000] Data 0.001 (0.004) Batch 0.046 (0.054) Remain 00:00:20 Loss 0.0179 (0.5558) Accuracy 0.9936.
+[2025-07-16 11:55:40,646 INFO test_sccan.py line 251 2199034] Test: [636/1000] Data 0.001 (0.004) Batch 0.050 (0.054) Remain 00:00:19 Loss 0.5945 (0.5523) Accuracy 0.8172.
+[2025-07-16 11:55:41,134 INFO test_sccan.py line 251 2199034] Test: [646/1000] Data 0.001 (0.004) Batch 0.048 (0.054) Remain 00:00:19 Loss 0.3581 (0.5475) Accuracy 0.9164.
+[2025-07-16 11:55:41,625 INFO test_sccan.py line 251 2199034] Test: [656/1000] Data 0.001 (0.004) Batch 0.051 (0.054) Remain 00:00:18 Loss 0.5746 (0.5469) Accuracy 0.8503.
+[2025-07-16 11:55:42,114 INFO test_sccan.py line 251 2199034] Test: [666/1000] Data 0.001 (0.004) Batch 0.046 (0.054) Remain 00:00:18 Loss 0.3987 (0.5440) Accuracy 0.9116.
+[2025-07-16 11:55:42,893 INFO test_sccan.py line 251 2199034] Test: [682/1000] Data 0.001 (0.004) Batch 0.046 (0.054) Remain 00:00:17 Loss 0.0039 (0.5406) Accuracy 0.9987.
+[2025-07-16 11:55:43,385 INFO test_sccan.py line 251 2199034] Test: [692/1000] Data 0.001 (0.004) Batch 0.051 (0.054) Remain 00:00:16 Loss 0.0823 (0.5358) Accuracy 0.9869.
+[2025-07-16 11:55:43,875 INFO test_sccan.py line 251 2199034] Test: [702/1000] Data 0.001 (0.004) Batch 0.047 (0.054) Remain 00:00:16 Loss 0.8576 (0.5354) Accuracy 0.7818.
+[2025-07-16 11:55:44,365 INFO test_sccan.py line 251 2199034] Test: [712/1000] Data 0.001 (0.004) Batch 0.051 (0.054) Remain 00:00:15 Loss 0.0663 (0.5306) Accuracy 0.9736.
+[2025-07-16 11:55:44,849 INFO test_sccan.py line 251 2199034] Test: [722/1000] Data 0.001 (0.004) Batch 0.047 (0.054) Remain 00:00:14 Loss 0.8778 (0.5299) Accuracy 0.8629.
+[2025-07-16 11:55:45,339 INFO test_sccan.py line 251 2199034] Test: [732/1000] Data 0.001 (0.004) Batch 0.050 (0.054) Remain 00:00:14 Loss 0.1238 (0.5287) Accuracy 0.9575.
+[2025-07-16 11:55:45,828 INFO test_sccan.py line 251 2199034] Test: [742/1000] Data 0.001 (0.004) Batch 0.048 (0.053) Remain 00:00:13 Loss 0.0419 (0.5264) Accuracy 0.9926.
+[2025-07-16 11:55:46,317 INFO test_sccan.py line 251 2199034] Test: [752/1000] Data 0.001 (0.004) Batch 0.050 (0.053) Remain 00:00:13 Loss 0.1263 (0.5278) Accuracy 0.9664.
+[2025-07-16 11:55:46,805 INFO test_sccan.py line 251 2199034] Test: [762/1000] Data 0.001 (0.004) Batch 0.047 (0.053) Remain 00:00:12 Loss 0.1135 (0.5274) Accuracy 0.9471.
+[2025-07-16 11:55:47,294 INFO test_sccan.py line 251 2199034] Test: [772/1000] Data 0.001 (0.004) Batch 0.051 (0.053) Remain 00:00:12 Loss 0.5879 (0.5285) Accuracy 0.9031.
+[2025-07-16 11:55:47,785 INFO test_sccan.py line 251 2199034] Test: [782/1000] Data 0.001 (0.004) Batch 0.048 (0.053) Remain 00:00:11 Loss 0.2984 (0.5322) Accuracy 0.8953.
+[2025-07-16 11:55:48,275 INFO test_sccan.py line 251 2199034] Test: [792/1000] Data 0.001 (0.004) Batch 0.051 (0.053) Remain 00:00:11 Loss 0.3798 (0.5353) Accuracy 0.9562.
+[2025-07-16 11:55:48,764 INFO test_sccan.py line 251 2199034] Test: [802/1000] Data 0.001 (0.004) Batch 0.047 (0.053) Remain 00:00:10 Loss 2.2378 (0.5373) Accuracy 0.7399.
+[2025-07-16 11:55:49,255 INFO test_sccan.py line 251 2199034] Test: [812/1000] Data 0.001 (0.004) Batch 0.051 (0.053) Remain 00:00:09 Loss 0.1265 (0.5368) Accuracy 0.9514.
+[2025-07-16 11:55:49,743 INFO test_sccan.py line 251 2199034] Test: [822/1000] Data 0.001 (0.004) Batch 0.048 (0.053) Remain 00:00:09 Loss 0.0312 (0.5369) Accuracy 0.9909.
+[2025-07-16 11:55:50,235 INFO test_sccan.py line 251 2199034] Test: [832/1000] Data 0.001 (0.004) Batch 0.051 (0.053) Remain 00:00:08 Loss 0.0329 (0.5336) Accuracy 0.9897.
+[2025-07-16 11:55:50,721 INFO test_sccan.py line 251 2199034] Test: [842/1000] Data 0.001 (0.004) Batch 0.046 (0.053) Remain 00:00:08 Loss 0.4756 (0.5307) Accuracy 0.7975.
+[2025-07-16 11:55:51,213 INFO test_sccan.py line 251 2199034] Test: [852/1000] Data 0.001 (0.004) Batch 0.050 (0.053) Remain 00:00:07 Loss 4.1571 (0.5313) Accuracy 0.5416.
+[2025-07-16 11:55:51,701 INFO test_sccan.py line 251 2199034] Test: [862/1000] Data 0.001 (0.003) Batch 0.049 (0.053) Remain 00:00:07 Loss 0.0153 (0.5275) Accuracy 0.9945.
+[2025-07-16 11:55:52,190 INFO test_sccan.py line 251 2199034] Test: [872/1000] Data 0.001 (0.003) Batch 0.051 (0.053) Remain 00:00:06 Loss 0.5599 (0.5323) Accuracy 0.7182.
+[2025-07-16 11:55:52,674 INFO test_sccan.py line 251 2199034] Test: [882/1000] Data 0.001 (0.003) Batch 0.046 (0.053) Remain 00:00:06 Loss 0.1111 (0.5291) Accuracy 0.9651.
+[2025-07-16 11:55:53,170 INFO test_sccan.py line 251 2199034] Test: [892/1000] Data 0.001 (0.003) Batch 0.050 (0.053) Remain 00:00:05 Loss 0.0211 (0.5323) Accuracy 0.9911.
+[2025-07-16 11:55:53,661 INFO test_sccan.py line 251 2199034] Test: [902/1000] Data 0.001 (0.003) Batch 0.048 (0.053) Remain 00:00:05 Loss 0.0570 (0.5304) Accuracy 0.9771.
+[2025-07-16 11:55:54,155 INFO test_sccan.py line 251 2199034] Test: [912/1000] Data 0.001 (0.003) Batch 0.051 (0.053) Remain 00:00:04 Loss 0.0102 (0.5320) Accuracy 0.9958.
+[2025-07-16 11:55:54,646 INFO test_sccan.py line 251 2199034] Test: [922/1000] Data 0.001 (0.003) Batch 0.048 (0.053) Remain 00:00:04 Loss 0.0152 (0.5283) Accuracy 0.9940.
+[2025-07-16 11:55:55,141 INFO test_sccan.py line 251 2199034] Test: [932/1000] Data 0.001 (0.003) Batch 0.051 (0.053) Remain 00:00:03 Loss 0.9029 (0.5307) Accuracy 0.5743.
+[2025-07-16 11:55:55,635 INFO test_sccan.py line 251 2199034] Test: [942/1000] Data 0.001 (0.003) Batch 0.049 (0.053) Remain 00:00:03 Loss 0.0345 (0.5431) Accuracy 0.9907.
+[2025-07-16 11:55:56,129 INFO test_sccan.py line 251 2199034] Test: [952/1000] Data 0.001 (0.003) Batch 0.052 (0.052) Remain 00:00:02 Loss 0.1012 (0.5468) Accuracy 0.9715.
+[2025-07-16 11:55:56,622 INFO test_sccan.py line 251 2199034] Test: [962/1000] Data 0.001 (0.003) Batch 0.048 (0.052) Remain 00:00:01 Loss 0.0175 (0.5507) Accuracy 0.9937.
+[2025-07-16 11:55:57,116 INFO test_sccan.py line 251 2199034] Test: [972/1000] Data 0.001 (0.003) Batch 0.050 (0.052) Remain 00:00:01 Loss 0.7321 (0.5516) Accuracy 0.8079.
+[2025-07-16 11:55:57,609 INFO test_sccan.py line 251 2199034] Test: [982/1000] Data 0.001 (0.003) Batch 0.048 (0.052) Remain 00:00:00 Loss 0.3437 (0.5515) Accuracy 0.9172.
+[2025-07-16 11:55:58,103 INFO test_sccan.py line 251 2199034] Test: [992/1000] Data 0.001 (0.003) Batch 0.050 (0.052) Remain 00:00:00 Loss 0.3704 (0.5489) Accuracy 0.8275.
+[2025-07-16 11:55:58,497 INFO test_sccan.py line 265 2199034] meanIoU---Val result: mIoU 0.5872.
+[2025-07-16 11:55:58,498 INFO test_sccan.py line 266 2199034] <<<<<<< Novel Results <<<<<<<
+[2025-07-16 11:55:58,498 INFO test_sccan.py line 268 2199034] Class_1 Result: iou 0.2220.
+[2025-07-16 11:55:58,498 INFO test_sccan.py line 268 2199034] Class_2 Result: iou 0.9302.
+[2025-07-16 11:55:58,498 INFO test_sccan.py line 268 2199034] Class_3 Result: iou 0.6609.
+[2025-07-16 11:55:58,498 INFO test_sccan.py line 268 2199034] Class_4 Result: iou 0.7728.
+[2025-07-16 11:55:58,498 INFO test_sccan.py line 268 2199034] Class_5 Result: iou 0.3498.
+[2025-07-16 11:55:58,498 INFO test_sccan.py line 270 2199034] FBIoU---Val result: FBIoU 0.7203.
+[2025-07-16 11:55:58,498 INFO test_sccan.py line 272 2199034] Class_0 Result: iou_f 0.8566.
+[2025-07-16 11:55:58,498 INFO test_sccan.py line 272 2199034] Class_1 Result: iou_f 0.5840.
+[2025-07-16 11:55:58,498 INFO test_sccan.py line 273 2199034] <<<<<<<<<<<<<<<<< End Evaluation <<<<<<<<<<<<<<<<<
+total time: 52.3492, avg inference time: 0.0111, count: 1000
+
+Total running time: 00h 00m 52s
+Seed0: 123
+Seed:  [321]
+mIoU:  [0.5872]
+FBIoU: [0.7203]
+pIoU:  [0.584]
+-------------------------------------------
+Best_Seed_m: 321 	 Best_Seed_F: 321 	 Best_Seed_p: 321
+Best_mIoU: 0.5872 	 Best_FBIoU: 0.7203 	 Best_pIoU: 0.5840
+Mean_mIoU: 0.5872 	 Mean_FBIoU: 0.7203 	 Mean_pIoU: 0.5840

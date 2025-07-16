@@ -11,6 +11,8 @@ initmodel/
 *.ppm
 *.tiff
 
+!figure/*.png
+
 *.pyc
 *.pyo
 *.pyd
@@ -18,13 +20,5 @@ initmodel/
 *.pyz
 *.pywz
 *.pyc~
-
-*.log
-*.log.*
-*.log.*.*
-*.log.*.*.*
-*.log.*.*.*.*
-*.log.*.*.*.*.*
-*.log.*.*.*.*.*.*
 
 *.pth
