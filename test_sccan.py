@@ -1,52 +1,37 @@
 import os
-import datetime
-import random
 import time
 import cv2
 import numpy as np
-import logging
 import argparse
 import math
-from visdom import Visdom
 import os.path as osp
 
-import torch
-import torch.backends.cudnn as cudnn
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.nn.parallel
-import torch.optim
-import torch.utils.data
-import torch.multiprocessing as mp
-import torch.distributed as dist
-from torch.utils.data.distributed import DistributedSampler
+import jittor as jt
+from jittor import nn
+import jittor.nn as F
+from jittor.dataset.dataset import DataLoader
 
-from tensorboardX import SummaryWriter
-
-from model import SCCAN
 
 from util import dataset
 from util import transform, transform_tri, config
 from util.util import AverageMeter, poly_learning_rate, intersectionAndUnionGPU, get_model_para_number, setup_seed, \
     get_logger, get_save_path, \
     is_same_model, fix_bn, sum_list, check_makedirs
-import matplotlib.pyplot as plt
 
 cv2.ocl.setUseOpenCL(False)
 cv2.setNumThreads(0)
 val_manual_seed = 123
-val_num = 1
 setup_seed(val_manual_seed, False)
 seed_array = [321]
 
 
 def get_parser():
-    parser = argparse.ArgumentParser(description='PyTorch Few-Shot Semantic Segmentation')
+    parser = argparse.ArgumentParser(description='Jittor Few-Shot Semantic Segmentation')
     parser.add_argument('--arch', type=str, default='SCCAN')
     parser.add_argument('--viz', action='store_true', default=False)
-    parser.add_argument('--config', type=str, default='config/coco/coco_split3_resnet50.yaml',
-                        help='config file')  # coco/coco_split0_resnet50.yaml
-    parser.add_argument('--opts', help='see config/ade20k/ade20k_pspnet50.yaml for all options', default=None,
+    parser.add_argument('--config', type=str, default='config/pascal/pascal_split0_resnet50.yaml',
+                        help='config file')
+    parser.add_argument('--opts', help='see config/pascal/pascal_split0_resnet50.yaml for all options', default=None,
                         nargs=argparse.REMAINDER)
     args = parser.parse_args()
     assert args.config is not None
@@ -59,9 +44,8 @@ def get_parser():
 
 def get_model(args):
     model = eval(args.arch).OneModel(args)
-    optimizer, optimizer_swin = model.get_optim(model, args, LR=args.base_lr)
 
-    model = model.cuda()
+    jt.flags.use_cuda = 1
 
     # Resume
     get_save_path(args)
@@ -72,7 +56,7 @@ def get_model(args):
         weight_path = osp.join(args.snapshot_path, args.weight)
         if os.path.isfile(weight_path):
             logger.info("=> loading checkpoint '{}'".format(weight_path))
-            checkpoint = torch.load(weight_path, map_location=torch.device('cpu'))
+            checkpoint = jt.load(weight_path)
             args.start_epoch = checkpoint['epoch']
             new_param = checkpoint['state_dict']
             try:
@@ -81,8 +65,6 @@ def get_model(args):
                 for key in list(new_param.keys()):
                     new_param[key[7:]] = new_param.pop(key)
                 model.load_state_dict(new_param)
-            optimizer.load_state_dict(checkpoint['optimizer'])
-            optimizer_swin.load_state_dict(checkpoint['optimizer_swin'])
             logger.info("=> loaded checkpoint '{}' (epoch {})".format(weight_path, checkpoint['epoch']))
         else:
             logger.info("=> no checkpoint found at '{}'".format(weight_path))
@@ -93,14 +75,13 @@ def get_model(args):
     print('Number of Learnable Parameters: %d' % (learnable_number))
 
     time.sleep(5)
-    return model, optimizer, optimizer_swin
+    return model
 
 
 def main():
     global args, logger, writer
     args = get_parser()
     logger = get_logger()
-    args.distributed = True if torch.cuda.device_count() > 1 else False
     print(args)
 
     if args.manual_seed is not None:
@@ -111,7 +92,7 @@ def main():
     assert (args.train_h - 1) % 8 == 0 and (args.train_w - 1) % 8 == 0
 
     logger.info("=> creating model ...")
-    model, optimizer, optimizer_swin = get_model(args)
+    model = get_model(args)
     logger.info(model)
 
     # ----------------------  DATASET  ----------------------
@@ -136,11 +117,12 @@ def main():
             val_data = dataset.SemData(split=args.split, shot=args.shot, data_root=args.data_root,
                                        data_list=args.val_list, transform=val_transform, mode='val',
                                        ann_type=args.ann_type, data_set=args.data_set, use_split_coco=args.use_split_coco)
-        val_loader = torch.utils.data.DataLoader(val_data, batch_size=args.batch_size_val, shuffle=False,
-                                                 num_workers=args.workers, pin_memory=False, sampler=None)
+        val_loader = DataLoader(val_data, batch_size=args.batch_size_val, shuffle=False,
+                                num_workers=args.workers)
 
     # ----------------------  VAL  ----------------------
     start_time = time.time()
+    val_num = len(seed_array)
     FBIoU_array = np.zeros(val_num)
     mIoU_array = np.zeros(val_num)
     pIoU_array = np.zeros(val_num)
@@ -212,29 +194,26 @@ def validate(val_loader, model, val_seed, split):
             iter_num += 1
             data_time.update(time.time() - end)
 
-            s_input = s_input.cuda(non_blocking=True)
-            s_mask = s_mask.cuda(non_blocking=True)
-            input = input.cuda(non_blocking=True)
-            target = target.cuda(non_blocking=True)
-            ori_label = ori_label.cuda(non_blocking=True)
-
             start_time = time.time()
             output = model(s_x=s_input, s_y=s_mask, x=input, y_m=target, cat_idx=subcls)
             model_time.update(time.time() - start_time)
 
             if args.ori_resize:
                 longerside = max(ori_label.size(1), ori_label.size(2))
-                backmask = torch.ones(ori_label.size(0), longerside, longerside, device='cuda') * 255
-                backmask[0, :ori_label.size(1), :ori_label.size(2)] = ori_label
+                backmask = jt.ones((ori_label.size(0), longerside, longerside)) * 255
+                backmask[:, :ori_label.size(1), :ori_label.size(2)] = ori_label
                 target = backmask.clone().long()
 
             output = F.interpolate(output, size=target.size()[1:], mode='bilinear', align_corners=True)
             loss = criterion(output, target)
-            output = output.max(1)[1]
-            subcls = subcls[0].cpu().numpy()[0]
+            output = output.argmax(dim=1)[0]
+            subcls = subcls[0].numpy()[0]
 
             intersection, union, new_target = intersectionAndUnionGPU(output, target, args.classes, args.ignore_label)
-            intersection, union, new_target = intersection.cpu().numpy(), union.cpu().numpy(), new_target.cpu().numpy()
+            intersection = intersection.numpy()
+            union = union.numpy()
+            new_target = new_target.numpy()
+            
             intersection_meter.update(intersection), union_meter.update(union), target_meter.update(new_target)
             class_intersection_meter[subcls] += intersection[1]
             class_union_meter[subcls] += union[1]
