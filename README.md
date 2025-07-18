@@ -140,10 +140,10 @@ bash test.sh 0 0 1 torch
 ### 性能对比
 下表展示了 PyTorch 和 Jittor 框架在训练和测试阶段的性能对比：
 
-| 框架 | 平均推理时间 (每个样本) | GPU 内存占用 |
+| 框架 | 平均推理时间 | GPU 内存占用 |
 | ---- | --------------- | --------------- |
-| torch | 0.035s | 4.8GB |
-| jittor | 0.011s | 5.3GB |
+| torch | 0.04s | 4.8GB |
+| jittor | 0.05s | 5.3GB |
 
 > 注：以上数据基于 NVIDIA RTX 4090 GPU, PASCAL-5<sup>0</sup> 1-shot 测试
 
