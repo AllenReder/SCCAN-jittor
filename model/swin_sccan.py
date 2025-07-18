@@ -95,14 +95,14 @@ class CrossWindowAttention(nn.Module):
     def execute(self, q, s):
         """
         Args:
-            q: query features, (bs*num_windows, N, C) = (8*8*8, 8*8, C)
+            q: [query | support], (bs*num_windows, N, C) = (8*8*8, 8*8, C)
             s: [query+support | support] features, (bs*num_windows, (2*)N, C) = (8*8*8, (2*)8*8, C)
         Returns:
             q: output query features, (bs*num_windows, N, C) = (8*8*8, 8*8, C)
         """
         B_, N, C = q.shape
         N_kv = s.size(1) # (2*)N
-        # c=32
+        # Multi-Head c=32
         q = self.q(q).reshape(B_, N, 1, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4) # (1, bs*_num_windows, num_heads, N, c)
         kv = self.kv(s).reshape(B_, N_kv, 2, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4) # (2, bs*_num_windows, num_heads, (2*)N, c)
         q = q[0] # (bs*_num_windows, num_heads, N, c)
@@ -193,7 +193,7 @@ class SwinTransformerBlock(nn.Module):
 
     def bis(self, input, dim, index):
         """
-
+        对输入按索引重排序
         Args:
             input: unfolded support feature, (bs, C*kernal_size*kernal_size, patch_num*patch_num)
             dim: 1
@@ -289,7 +289,7 @@ class SwinTransformerBlock(nn.Module):
         s_mask = s_mask.view(B, H, W, 1) # (bs, 64, 64, 1)
         _, Hp, Wp, _ = q.shape
 
-        # ===== Self/Cross-attention =====
+        # ===== Shifted Window =====
         if self.shift_size > 0:
             pad_l = pad_t = self.window_size // 2
             pad_r = pad_b = self.window_size - (self.window_size // 2)

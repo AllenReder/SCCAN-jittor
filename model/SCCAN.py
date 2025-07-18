@@ -263,6 +263,8 @@ class OneModel(nn.Module):
 
         # ===== Loss =====
         if self.training:
+            # meta_out: (bs, 2, 473, 473)
+            # y_m: (bs, 473, 473)
             main_loss = self.criterion_dice(meta_out, y_m.long())
             return meta_out.argmax(dim=1)[0], main_loss
         else:

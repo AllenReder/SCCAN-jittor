@@ -23,7 +23,7 @@ def weighted_dice_loss(prediction, target_seg, weighted_val: float = 1.0, reduct
     """
     target_seg_fg = target_seg == 1
     target_seg_bg = target_seg == 0
-    target_seg = jt.stack([target_seg_bg, target_seg_fg], dim=1).float()
+    target_seg = jt.stack([target_seg_bg, target_seg_fg], dim=1).float() # (bs, 2, h, w) one-hot
 
     n, _, h, w = target_seg.shape
 
