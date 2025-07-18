@@ -61,7 +61,7 @@ Method:
   merge_tau: 0.9     # fusion threshold tau
 
 Test_Finetune:
-  weight: train_epoch_181_0.7215.pth # load weight for fine-tuning or testing (such as win8_train_epoch_124_0.7262.pth)
+  weight: train_epoch_125_0.7319.pth # load weight for fine-tuning or testing (such as win8_train_epoch_124_0.7262.pth)
   ann_type: 'mask' # mask/bbox
 
 
